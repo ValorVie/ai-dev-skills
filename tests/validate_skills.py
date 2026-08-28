@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 import sys
 from pathlib import Path
@@ -10,6 +11,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILLS_ROOT = ROOT / "skills"
+PLUGIN_MANIFEST = ROOT / ".claude-plugin" / "plugin.json"
 NAME_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 LINK_RE = re.compile(r"(?<!!)\[[^\]]*\]\(([^)]+)\)")
 ALLOWED_FRONTMATTER = {
@@ -105,6 +107,37 @@ def validate_skill_metadata(errors: list[str]) -> None:
         names[name] = skill_file
 
 
+def validate_plugin_manifest(errors: list[str]) -> None:
+    if not PLUGIN_MANIFEST.is_file():
+        errors.append("missing .claude-plugin/plugin.json collection manifest")
+        return
+    try:
+        manifest = json.loads(PLUGIN_MANIFEST.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        errors.append(f"invalid .claude-plugin/plugin.json: {exc}")
+        return
+    if not isinstance(manifest, dict) or manifest.get("name") != "ai-dev-skills":
+        errors.append("plugin manifest name must be ai-dev-skills")
+    declared = manifest.get("skills")
+    if not isinstance(declared, list) or not all(
+        isinstance(path, str) for path in declared
+    ):
+        errors.append("plugin manifest skills must be a list of relative paths")
+        return
+    expected = {
+        f"./skills/{skill_file.parent.name}"
+        for skill_file in SKILLS_ROOT.glob("*/SKILL.md")
+    }
+    if len(declared) != len(set(declared)):
+        errors.append("plugin manifest skills must not contain duplicates")
+    if set(declared) != expected:
+        errors.append(
+            "plugin manifest skills must exactly match canonical IDs: "
+            f"missing={sorted(expected - set(declared))} "
+            f"extra={sorted(set(declared) - expected)}"
+        )
+
+
 def validate_links(errors: list[str]) -> None:
     for skill_file in sorted(SKILLS_ROOT.glob("*/SKILL.md")):
         skill_root = skill_file.parent.resolve()
@@ -167,6 +200,7 @@ def validate_portable_paths(errors: list[str]) -> None:
 def main() -> int:
     errors: list[str] = []
     validate_skill_metadata(errors)
+    validate_plugin_manifest(errors)
     validate_links(errors)
     validate_public_boundary(errors)
     validate_portable_paths(errors)

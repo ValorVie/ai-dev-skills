@@ -1,0 +1,37 @@
+{
+  "name": "ai-dev-skills",
+  "version": "0.1.1",
+  "description": "ai-dev first-party skills for AI-assisted development workflows.",
+  "author": {
+    "name": "ValorVie"
+  },
+  "homepage": "https://github.com/ValorVie/ai-dev-skills",
+  "repository": "https://github.com/ValorVie/ai-dev-skills",
+  "license": "MIT",
+  "keywords": [
+    "ai-dev",
+    "agent-skills",
+    "development"
+  ],
+  "skills": [
+    "./skills/cloud-infrastructure-security",
+    "./skills/custom-agent-router",
+    "./skills/custom-skill-creator",
+    "./skills/custom-skills-dev",
+    "./skills/custom-skills-doc-updater",
+    "./skills/custom-skills-doc-writer",
+    "./skills/custom-skills-ecc-analyze",
+    "./skills/custom-skills-git-commit",
+    "./skills/custom-skills-notify",
+    "./skills/custom-skills-plan-analyze",
+    "./skills/custom-skills-threads-research",
+    "./skills/custom-skills-tool-overlap-analyzer",
+    "./skills/custom-skills-upstream-ops",
+    "./skills/discuss-multi-ai",
+    "./skills/eli5",
+    "./skills/first-principles",
+    "./skills/simplify",
+    "./skills/wiki",
+    "./skills/work-log-claude"
+  ]
+}

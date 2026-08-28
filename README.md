@@ -17,6 +17,10 @@ npx skills add ValorVie/ai-dev-skills --list
 npx skills add ValorVie/ai-dev-skills
 ```
 
+互動式清單會將 19 個 skills 收在 `Ai Dev Skills` group。`skills@1.5.22` 可從
+group 那一列整組選取；`skills@1.5.23` 以上另提供最上方的 `Select All`。展開
+group 後仍可個別選擇。
+
 只安裝指定 skill：
 
 ```bash
@@ -59,7 +63,9 @@ python -m pytest tests/test_custom_agent_router_contract.py skills/work-log-clau
 DISABLE_TELEMETRY=1 npx --yes skills@1.5.22 add . --list
 ```
 
-validator 會檢查 canonical ID、目錄名稱、必要 frontmatter、相對連結、generated files 與公開邊界。
+validator 會檢查 canonical ID、目錄名稱、必要 frontmatter、plugin collection
+清單、相對連結、generated files 與公開邊界。`.claude-plugin/plugin.json` 必須明確
+列出全部 canonical IDs，讓 `npx skills` 顯示可整組選取的 collection。
 
 ## 維護原則
 

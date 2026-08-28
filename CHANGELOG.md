@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1 - 2026-08-28
+
+- 新增 `.claude-plugin/plugin.json`，讓 `npx skills` 將 19 個 skills 顯示為可整組選取的 `Ai Dev Skills` collection。
+- validator 會檢查 plugin collection 與 canonical skill inventory 完全一致。
+
 ## 0.1.0 - 2026-08-28
 
 - 從 `ValorVie/custom-skills` 抽離 19 個第一方 skills。
