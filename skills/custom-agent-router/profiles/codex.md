@@ -10,7 +10,6 @@
 | Codex CLI | `0.154.0` | `codex --version` |
 | Multi-agent | 現行版本預設可用，且本機 `multi_agent` stable | Codex 官方 Subagents 文件、`codex features list` |
 | Session 上限 | 最多 15 threads | `.codex/config.toml` 的 `max_concurrent_threads_per_session = 15` |
-| Luna | 不可用 | 當前 Codex model／custom role 清單沒有 Luna |
 
 15 是上限，不是預設派工數。實際並行數取 runtime 剩餘 slot、專案限制與獨立工作數的
 最小值。
@@ -25,7 +24,7 @@
 | fresh review | `sol_reviewer` | `gpt-5.6-sol xhigh` | 使用全新 context；高風險時還必須證明 sandbox 與 filesystem 唯讀 |
 
 `light` 與 `standard` 目前使用同一模型與 effort，差異只在角色契約。不要宣稱 `light`
-比較便宜，也不要為了湊出三層而使用不存在的 Luna。
+比較便宜。
 
 ## 綁定方式
 
