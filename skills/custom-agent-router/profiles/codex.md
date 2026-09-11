@@ -7,7 +7,7 @@
 
 | 項目 | 值 | 證據 |
 |------|----|------|
-| Codex CLI | `0.146.1` | `codex --version` |
+| Codex CLI | `0.154.0` | `codex --version` |
 | Multi-agent | 現行版本預設可用，且本機 `multi_agent` stable | Codex 官方 Subagents 文件、`codex features list` |
 | Session 上限 | 最多 15 threads | `.codex/config.toml` 的 `max_concurrent_threads_per_session = 15` |
 | Luna | 不可用 | 當前 Codex model／custom role 清單沒有 Luna |
@@ -19,7 +19,7 @@
 
 | Tier／用途 | Codex binding | 模型與 effort | 使用限制 |
 |------------|---------------|---------------|----------|
-| `light` | `terra_worker` | `gpt-5.6-terra max` | 只做規則固定、可重複的工作；遇到第一個例外就停止 |
+| `light` | `luna_worker` | `gpt-5.6-luna max` | 只做規則固定、可重複的工作；遇到第一個例外就停止 |
 | `standard` | `terra_builder` | `gpt-5.6-terra max` | 只在設計、檔案範圍與驗收已定時實作 |
 | `frontier` | Sol Lead | `gpt-5.6-sol xhigh` | 處理歧義、架構、安全與最終仲裁；先驗證主 session metadata |
 | fresh review | `sol_reviewer` | `gpt-5.6-sol xhigh` | 使用全新 context；高風險時還必須證明 sandbox 與 filesystem 唯讀 |
@@ -74,7 +74,7 @@ fresh review 標成 unavailable，停止 `high / critical` 的完成聲明。低
 ## 停止與降級
 
 - runtime slot 少於設定值：使用較低上限，不等待或建立隱藏佇列。
-- `terra_worker` 不可用：由 Lead 直接做機械工作，或使用 `terra_builder` 並記錄偏差。
+- `luna_worker` 不可用：由 Lead 直接做機械工作，或使用 `terra_builder` 並記錄偏差。
 - `terra_builder` 不可用：只有 Lead 具備所需判斷時才直接做；否則停止派工。
 - Sol binding 無法驗證：停止 frontier 完成聲明，交回使用者或已驗證的 Lead。
 - Reviewer 唯讀或 fresh context 無法驗證：停止高風險完成聲明。
