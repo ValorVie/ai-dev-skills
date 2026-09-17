@@ -18,12 +18,13 @@ description: |
   binding 偏差；不要猜測模型、effort、唯讀或 fresh-context 能力。
 
 runtime profile 只能選擇實際模型與角色，不能改變 mode、risk、shape、批准或專案規則。
+主 session 的模型與 effort 由使用者選擇；Router 只讀回，不為符合 profile 自動切換。
 
 ### Codex 專案設定閘門
 
 在 Codex runtime 套用本 Skill 時，先確認目前專案的 `.codex/config.toml`、
-`.codex/agents/*.toml` 與 runtime metadata。若專案設定不存在、不完整或無法證明符合
-profile，讀取
+`.codex/agents/*.toml` 與 runtime metadata。只核對本次路由需要的角色；若缺少必要設定
+且 runtime 也無法提供 profile 允許的等價能力，讀取
 [Codex 專案設定引導](references/codex-project-onboarding.md)，說明目前能安全使用的降級
 能力，再詢問使用者要「建立建議設定」、「只顯示建議」或「暫不設定」。
 
@@ -61,6 +62,7 @@ profile，讀取
 | `light` | 搜尋、列舉、重現、測試、格式與規則固定的機械工作 |
 | `standard` | 邊界清楚，但需要工程判斷的實作、除錯、整合與審查 |
 | `frontier` | 歧義、架構、跨元件根因、安全、不可逆決策與最終仲裁 |
+| `expert` | 複雜跨層問題，或需要獨立重查多輪錯誤假設與相互矛盾的證據 |
 
 選擇最低可勝任的 tier。高 tier 可以暫代低 tier，但要在路由紀錄旁註明模型綁定偏差；
 低 tier 不得替代必要的安全、架構或高風險判斷。實際模型與 effort 由執行環境設定
@@ -106,9 +108,28 @@ profile，讀取
   使用 `review=fresh`。
 - `high / critical`：完成聲明使用 `review=approval+fresh`。若執行環境無法證明全新
   上下文或唯讀能力，就停止完成聲明，不以自審冒充。
-- 第一次失敗先修正派工說明、證據或環境問題；需要時同一 tier 最多重試一次。
+- 一般執行失敗先修正派工說明、證據或環境問題；需要時同一 tier 最多重試一次。
 - 同原因再次失敗時最多升一個 tier。升級後仍失敗，或必要能力不可用，就交回主
   Agent 或使用者，不再自動重跑。
+
+### 同題三次方向誤判
+
+方向誤判是原先的根因判斷或修正方向，被後續可核對的證據推翻。每輪保存「原判斷、
+反證、結果」；同一輪的多個失敗斷言只算一次。一般測試失敗、預期的 RED、命令錯誤、
+網路或權限不足不計入；若它們另有證據推翻原判斷，才按該輪方向誤判計一次。
+
+同一未解問題跨主／子代理累計，換代理、換方法或穿插其他工作不歸零；已解決的不同問題
+不併計。沿用既有任務紀錄保存次數與證據，不新增計數程式或追蹤系統。
+
+累計達三輪且主模型符合 runtime profile 的條件時，停止同題實作，設
+`fallback=direction-reanalysis-once`，另派一個全新 context 的 `expert` 重新分析。
+只交付原目標、授權邊界、固定版本及三輪原判斷與反證，不把前代理的結論當成既定事實。
+重新分析只讀取原本獲准的資料，回傳錯誤假設、證據、建議修正方向與仍未知項；不實作、
+不改任務狀態、不自行恢復暫停的工作。同題最多啟動一次，結果由主 session 核對；仍無解
+或診斷能力不可用就交回使用者，不再派第二個診斷代理，也不降級冒充。
+
+這是一次獨立重新分析，不增加一般重試額度，也不要求刻意試滿三次。原有批准與安全
+停止條件立即生效；若它們禁止繼續調查，就只記錄待分析原因，不啟動代理。
 
 ## 輸出路由紀錄
 
@@ -124,11 +145,11 @@ mode=execute risk=material tier=standard shape=single_worker owner=builder revie
 |------|----|
 | `mode` | `execute`、`explore_then_plan`、`co_discover` |
 | `risk` | `low`、`material`、`high`、`critical` |
-| `tier` | `light`、`standard`、`frontier` |
+| `tier` | `light`、`standard`、`frontier`、`expert` |
 | `shape` | `direct`、`single_worker`、`bounded_parallel` |
 | `owner` | 負責交付的角色或 Agent 名稱 |
 | `review` | `lead`、`fresh`、`approval+fresh` |
-| `fallback` | `none`、`same-tier-once`、`one-tier-max` |
+| `fallback` | `none`、`same-tier-once`、`one-tier-max`、`direction-reanalysis-once` |
 
 路由紀錄只保存決策，不取代派工說明、測試證據、批准紀錄或任務狀態。簡單且直接
 完成的工作不必為了格式輸出路由紀錄。
@@ -145,6 +166,8 @@ runtime profile 若要求 binding receipt，就放在 route receipt 下一行。
 | 兩個獨立且不寫同檔的盤點 | `execute / light / low / bounded_parallel / lead` |
 | 需求與驗收仍有產品歧義 | `co_discover / frontier / direct` |
 | 跨元件、證據不足但方向清楚 | `explore_then_plan / frontier / material / direct` |
+| 複雜跨層，具備可獨立交付的子題 | `explore_then_plan / expert / material / single_worker / lead`；模型依 profile |
+| 符合 profile 的主模型，同題累計三輪方向誤判 | 停止同題實作；全新 context 只讀重新分析一次，沿用原風險與批准邊界 |
 | 資料庫或正式環境 mutation | `explore_then_plan / frontier / critical / approval+fresh` |
 | 低能力層級不可用 | 記錄綁定偏差後升一層，或由主 Agent 直接處理 |
 | 必要的全新上下文審查者不可用 | 停止高風險完成聲明，不以自審冒充 |
@@ -159,7 +182,8 @@ runtime profile 若要求 binding receipt，就放在 route receipt 下一行。
 - 需要的批准尚未取得。
 - 執行環境無法證明必要能力。
 - 派工後出現未預期的重疊寫入或外部狀態變更。
-- 同一原因已用完一次同 tier 重試與一次 tier 升級。
+- 同一原因已用完一次同 tier 重試與一次 tier 升級：停止實作；只有符合上節且仍獲准的
+  一次重新分析可以另行進行，不能藉此重新取得實作或重試額度。
 
 不要建立排程器、佇列、Agent 登錄表、Hook、路由資料庫或通用任務追蹤器。只有真實
 失敗證據顯示 Prompt 與執行環境原生能力不足時，才另案評估程式或 Hook。
