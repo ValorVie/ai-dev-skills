@@ -18,10 +18,10 @@ profile 與設定引導只使用角色代號與佔位符；換模型、調整 ef
 
 | 角色代號 | model | effort |
 |----------|-------|--------|
-| `light_worker` | `gpt-5.6-luna` | `max` |
-| `standard_builder` | `gpt-5.6-terra` | `max` |
+| `light_worker` | `gpt-6-luna` | `max` |
+| `standard_builder` | `gpt-6-luna` | `max` |
 | `expert` | `gpt-6-astra` | `high` |
-| `reviewer` | `gpt-5.6-sol` | `xhigh` |
+| `reviewer` | `gpt-6-sol` | `xhigh` |
 | `reanalyst` | `gpt-6-astra` | `xhigh` |
 
 ## claude-code
