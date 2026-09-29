@@ -1,7 +1,7 @@
 ---
 name: custom-agent-router
 description: |
-  為目標、範圍與授權已明確的非簡單 Agent 工作選擇互動模式、能力層級、風險、派工形狀、審查與有限備援。適用於需要在主 Agent 直接處理、單一工作代理與有限平行之間選擇，或需要依複雜度與風險決定能力層級及審查強度的工作；Codex 專案缺少已驗證的 Agent 設定時，也用本 Skill 引導使用者選擇建立、預覽或略過。簡單問答、唯讀確認與可直接驗證的小修改不要使用。
+  為目標、範圍與授權已明確的非簡單 Agent 工作選擇互動模式、能力層級、風險、派工形狀、審查與有限備援。適用於需要在主 Agent 直接處理、單一工作代理與有限平行之間選擇，或需要依複雜度與風險決定能力層級及審查強度的工作；目前 harness 的專案缺少已驗證的 Agent 設定時，也用本 Skill 引導使用者選擇建立、預覽或略過。簡單問答、唯讀確認與可直接驗證的小修改不要使用。
 ---
 
 # Custom Agent Router
@@ -9,24 +9,41 @@ description: |
 把已獲授權的工作映射成最小可行執行形狀。只選擇執行方式，不建立權限、任務追蹤器、
 規格或新的工作流程。
 
-## 綁定執行環境
+## Harness 綁定
 
-先完成通用路由，再讀取當前 runtime profile：
+通用路由只使用 tier 與用途。每個 tier／用途對應一個跨 harness 共用的角色代號：
 
-- Codex：讀取 [Codex runtime profile](profiles/codex.md)。
-- 沒有已驗證 profile：保留抽象 tier，由主 Agent 使用現場可證明的能力，並記錄
-  binding 偏差；不要猜測模型、effort、唯讀或 fresh-context 能力。
+| Tier／用途 | 角色代號 |
+|------------|----------|
+| `light` | `light_worker` |
+| `standard` | `standard_builder` |
+| `frontier` | Lead（主 session） |
+| `expert` | `expert` |
+| fresh review | `reviewer` |
+| direction reanalysis | `reanalyst` |
+
+先完成通用路由，再讀取綁定：
+
+1. [Harness 綁定對照表](profiles/bindings.md)：各 harness 每個角色代號的模型與 effort，
+   是實際模型的唯一來源。
+2. 當前 harness 的 profile：設定位置、綁定方式、fresh context、唯讀證據與降級規則。
+   - Codex：[profiles/codex.md](profiles/codex.md)
+   - Claude Code：[profiles/claude-code.md](profiles/claude-code.md)
+3. 沒有已驗證 profile：保留抽象 tier，由主 Agent 使用現場可證明的能力，並記錄
+   binding 偏差；不要猜測模型、effort、唯讀或 fresh-context 能力。
 
 runtime profile 只能選擇實際模型與角色，不能改變 mode、risk、shape、批准或專案規則。
 主 session 的模型與 effort 由使用者選擇；Router 只讀回，不為符合 profile 自動切換。
 
-### Codex 專案設定閘門
+### 專案設定閘門
 
-在 Codex runtime 套用本 Skill 時，先確認目前專案的 `.codex/config.toml`、
-`.codex/agents/*.toml` 與 runtime metadata。只核對本次路由需要的角色；若缺少必要設定
-且 runtime 也無法提供 profile 允許的等價能力，讀取
-[Codex 專案設定引導](references/codex-project-onboarding.md)，說明目前能安全使用的降級
-能力，再詢問使用者要「建立建議設定」、「只顯示建議」或「暫不設定」。
+套用本 Skill 時，先依當前 harness profile 確認專案層 Agent 設定與 runtime metadata。
+只核對本次路由需要的角色；若缺少必要設定且 runtime 也無法提供 profile 允許的等價能力，
+讀取該 harness 的設定引導，說明目前能安全使用的降級能力，再詢問使用者要「建立建議設定」、
+「只顯示建議」或「暫不設定」：
+
+- Codex：[Codex 專案設定引導](references/codex-project-onboarding.md)
+- Claude Code：[Claude Code 專案設定引導](references/claude-code-project-onboarding.md)
 
 未取得使用者選擇前，不得建立或修改設定。若使用者略過，仍可完成通用路由，但要保留
 抽象 tier，只使用現場能證明的能力並記錄 binding 偏差，不得把未驗證的 named role、
@@ -121,8 +138,9 @@ runtime profile 只能選擇實際模型與角色，不能改變 mode、risk、s
 同一未解問題跨主／子代理累計，換代理、換方法或穿插其他工作不歸零；已解決的不同問題
 不併計。沿用既有任務紀錄保存次數與證據，不新增計數程式或追蹤系統。
 
-累計達三輪且主模型符合 runtime profile 的條件時，停止同題實作，設
-`fallback=direction-reanalysis-once`，另派一個全新 context 的 `expert` 重新分析。
+累計達三輪且主模型符合[對照表的主模型條件](profiles/bindings.md#三次方向誤判的主模型條件)時，
+停止同題實作，設 `fallback=direction-reanalysis-once`，另派一個全新 context 的
+`reanalyst` 重新分析。
 只交付原目標、授權邊界、固定版本及三輪原判斷與反證，不把前代理的結論當成既定事實。
 重新分析只讀取原本獲准的資料，回傳錯誤假設、證據、建議修正方向與仍未知項；不實作、
 不改任務狀態、不自行恢復暫停的工作。同題最多啟動一次，結果由主 session 核對；仍無解

@@ -22,7 +22,7 @@
 
 ```text
 目前專案沒有完整的 Codex Agent 設定。Custom Agent Router 的通用路由仍可使用，
-但本次需要的工作、審查或 Astra 角色不能視為已驗證的專案能力。
+但本次需要的工作、審查或重新分析角色不能視為已驗證的專案能力。
 要我建立建議設定、只顯示建議，還是暫不設定？
 ```
 
@@ -37,10 +37,12 @@
 
 ## 建議設定
 
-以下內容對應目前的 `profiles/codex.md`。套用前先核對本機 Codex 確實支援這些模型、
-角色與設定鍵；若不一致，顯示偏差並停止建立，不要自行換成名字相近的模型。
-這些是獨立安裝的角色範本，不會隨 `npx skills` 自動建立。主 session 的 Sol／Astra
-與 effort 由使用者自行選擇；以下專案設定不宣告主模型，也不修改使用者層設定。
+以下內容對應目前的 `profiles/codex.md`。`model` 與 `model_reasoning_effort` 使用
+[Harness 綁定對照表](../profiles/bindings.md#codex) 的佔位符；建立或顯示建議時，從對照表
+`codex` 節代入實際值，不另外寫死。套用前先核對本機 Codex 確實支援這些模型、角色與設定鍵；
+若不一致，顯示偏差並停止建立，不要自行換成名字相近的模型。
+這些是獨立安裝的角色範本，不會隨 `npx skills` 自動建立。主 session 的模型與 effort 由使用者
+自行選擇；以下專案設定不宣告主模型，也不修改使用者層設定。
 
 `.codex/config.toml`：
 
@@ -50,61 +52,61 @@ enabled = true
 max_concurrent_threads_per_session = 15
 ```
 
-`.codex/agents/luna-worker.toml`：
+`.codex/agents/light-worker.toml`：
 
 ```toml
-name = "luna_worker"
+name = "light_worker"
 description = "執行規則固定、可重複且不需要設計決策的工作"
-model = "gpt-5.6-luna"
-model_reasoning_effort = "max"
+model = "{{codex.light_worker.model}}"
+model_reasoning_effort = "{{codex.light_worker.effort}}"
 developer_instructions = """
-你是 Luna Worker。只執行交接訊息中規則固定、可重複的工作。
+你是 Light Worker。只執行交接訊息中規則固定、可重複的工作。
 不得解釋模糊需求、選擇新方法、建立例外處理、操作任務追蹤器、stage、commit 或 push。
 遇到第一個不符合固定規則的項目、未預期變更、權限不足或高風險操作時，立即停止並回報證據。
 完成時回報完成內容、修改檔案、驗證結果與未解決問題。
 """
 ```
 
-`.codex/agents/terra-builder.toml`：
+`.codex/agents/standard-builder.toml`：
 
 ```toml
-name = "terra_builder"
+name = "standard_builder"
 description = "依既定設計執行有明確範圍與驗收條件的實作"
-model = "gpt-5.6-terra"
-model_reasoning_effort = "max"
+model = "{{codex.standard_builder.model}}"
+model_reasoning_effort = "{{codex.standard_builder.effort}}"
 developer_instructions = """
-你是 Terra Builder。只處理交接訊息列出的目標、檔案與驗收條件。
+你是 Standard Builder。只處理交接訊息列出的目標、檔案與驗收條件。
 可以在既定設計內實作、補測試並修正範圍內錯誤；不得改變設計、擴張範圍、操作任務追蹤器、stage、commit 或 push。
 遇到需要新設計、未列入範圍的檔案、使用者既有變更衝突、權限不足或高風險操作時，立即停止並回報證據。
 完成時回報完成內容、修改檔案、驗證結果與未解決問題。
 """
 ```
 
-`.codex/agents/sol-reviewer.toml`：
+`.codex/agents/reviewer.toml`：
 
 ```toml
-name = "sol_reviewer"
+name = "reviewer"
 description = "用全新 context 唯讀審查變更、證據與計畫符合度"
-model = "gpt-5.6-sol"
-model_reasoning_effort = "xhigh"
+model = "{{codex.reviewer.model}}"
+model_reasoning_effort = "{{codex.reviewer.effort}}"
 sandbox_mode = "read-only"
 approval_policy = "never"
 developer_instructions = """
-你是 Sol Reviewer。使用全新 context，唯讀檢查原始需求、核准範圍、diff、測試證據與計畫符合度。
+你是 Reviewer。使用全新 context，唯讀檢查原始需求、核准範圍、diff、測試證據與計畫符合度。
 依 Blocking、Important、Note 回報問題；不得修改檔案、操作任務追蹤器或執行 Git mutation。
 沒有發現問題也只代表審查通過，不得宣稱已取得部署、正式環境、資料庫或外部寫入批准。
 """
 ```
 
-`.codex/agents/astra-expert.toml`：
+`.codex/agents/expert.toml`：
 
 ```toml
-name = "astra_expert"
+name = "expert"
 description = "處理有明確交付與授權的複雜跨層工作"
-model = "gpt-6-astra"
-model_reasoning_effort = "high"
+model = "{{codex.expert.model}}"
+model_reasoning_effort = "{{codex.expert.effort}}"
 developer_instructions = """
-你是 Astra Expert。依交接的原目標、範圍、版本與證據分析跨層問題。
+你是 Expert。依交接的原目標、範圍、版本與證據分析跨層問題。
 沒有明確檔案與實作授權時只做唯讀分析；有授權時，只修改交付範圍並執行相符驗證。
 需要變更設計或擴大範圍時先回報，不操作任務追蹤器、stage、commit 或 push。
 不得覆蓋其他人的修改；遇到批准或安全停止條件立即停止，不代替主 session 決定。
@@ -112,17 +114,17 @@ developer_instructions = """
 """
 ```
 
-`.codex/agents/astra-reanalyst.toml`：
+`.codex/agents/reanalyst.toml`：
 
 ```toml
-name = "astra_reanalyst"
+name = "reanalyst"
 description = "同題三輪方向誤判後，以全新上下文只讀重新分析"
-model = "gpt-6-astra"
-model_reasoning_effort = "xhigh"
+model = "{{codex.reanalyst.model}}"
+model_reasoning_effort = "{{codex.reanalyst.effort}}"
 sandbox_mode = "read-only"
 approval_policy = "never"
 developer_instructions = """
-你是 Astra Reanalyst。只分析交接的同一未解問題，不繼承前代理的結論。
+你是 Reanalyst。只分析交接的同一未解問題，不繼承前代理的結論。
 先核對原目標、授權邊界、固定版本與三輪原判斷及反證；資料不足就明確回報。
 僅讀取原本獲准的資料，回傳錯誤假設、證據、建議修正方向與仍未知項。
 不得修改檔案、操作任務追蹤器、執行 Git mutation、對外寫入或自行恢復暫停的工作。
@@ -139,7 +141,8 @@ developer_instructions = """
 - 若 `.codex/` 完全不存在，先列出本次需要的角色；取得選擇後只建立設定檔、所需角色與必要目錄。
 - 若設定已存在，先顯示最小差異，只合併缺少的 table 或 key，不整份覆寫。
 - 若同名角色已存在但內容不同，停止並請使用者決定沿用或調整；不要靜默替換。
-- 既有 `terra_worker` 不自動更名或刪除；若需要新的 `luna_worker`，在本次設定差異中明列。
+- 既有以模型命名的舊角色（例如早期範本產生的角色）不自動更名或刪除；若需要新增用途命名的
+  角色，在本次設定差異中明列。
 - 不為新專案建立舊式 `[agents.<name>] config_file` registry，也不自動遷移已能正常載入的
   舊式設定。
 - 不加入 MCP、Hook、任務追蹤器、專案業務規則或未被要求的 Agent。
@@ -151,7 +154,8 @@ developer_instructions = """
    `developer_instructions`。
 2. 確認專案已被 Codex 信任；無法確認時，不把設定檔存在寫成設定已生效。
 3. 提醒使用者重新啟動 Codex session，讓專案設定重新載入。
-4. 在新 session 核對 `multi_agent`、可用角色、模型與 effort 的 runtime metadata。
-5. `sol-reviewer.toml` 與 `astra-reanalyst.toml` 宣告唯讀不等於 runtime 已證明唯讀；仍依
+4. 在新 session 核對 `multi_agent`、可用角色，以及模型與 effort 的 runtime metadata 是否符合
+   對照表 `codex` 節。
+5. `reviewer.toml` 與 `reanalyst.toml` 宣告唯讀不等於 runtime 已證明唯讀；仍依
    `profiles/codex.md` 的 Reviewer 安全限制驗證 parent、child 與 filesystem 權限。
 6. 任一能力無法驗證時，保留抽象 tier 並記錄 binding 偏差，不宣稱 onboarding 完成。
