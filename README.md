@@ -17,7 +17,7 @@ npx skills add ValorVie/ai-dev-skills --list
 npx skills add ValorVie/ai-dev-skills
 ```
 
-互動式清單會將 20 個 skills 收在 `Ai Dev Skills` group。`skills@1.5.22` 可從
+互動式清單會將 19 個 skills 收在 `Ai Dev Skills` group。`skills@1.5.22` 可從
 group 那一列整組選取；`skills@1.5.23` 以上另提供最上方的 `Select All`。展開
 group 後仍可個別選擇。
 
@@ -50,7 +50,6 @@ ai-dev 使用者不需要逐一執行這些命令。ai-dev 的 `npx-skills` phas
 - `first-principles`
 - `safe-run`
 - `wiki`
-- `work-log-claude`
 
 ## 安裝邊界
 
@@ -60,7 +59,7 @@ ai-dev 使用者不需要逐一執行這些命令。ai-dev 的 `npx-skills` phas
 
 ```bash
 python tests/validate_skills.py
-python -m pytest tests/test_custom_agent_router_contract.py skills/work-log-claude/tests
+python -m pytest tests/test_custom_agent_router_contract.py
 DISABLE_TELEMETRY=1 npx --yes skills@1.5.22 add . --list
 ```
 

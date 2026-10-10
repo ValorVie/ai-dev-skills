@@ -32,7 +32,6 @@
     "./skills/first-principles",
     "./skills/safe-run",
     "./skills/simplify",
-    "./skills/wiki",
-    "./skills/work-log-claude"
+    "./skills/wiki"
   ]
 }

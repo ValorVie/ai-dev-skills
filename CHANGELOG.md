@@ -6,6 +6,7 @@
 - `custom-skill-creator` 的輸出格式範例改用一般語氣（不再示範全大寫 ALWAYS），benchmark schema 範例的模型 ID 改為佔位字串。
 - `custom-skills-ecc-analyze` 移除已退役的 `uds` 與寫死的 skill 數量。
 - `custom-skills-ecc-analyze`、`custom-skills-dev`、`custom-skills-doc-updater` 的 description 移除觸發片語清單，保留 Use when 的意圖說明。
+- 移除 `work-log-claude`。工作日誌改由 ai-dev 專案範本提供的 `work-log-codex` 處理，Claude Code 與 Codex 共用同一套解析器；只讀 Claude Code 紀錄時用範本的 `.claude/skills/work-log-claude` 薄包裝。skill collection 更新為 19 個 skills。
 
 ## 0.1.2 - 2026-09-29
 

@@ -184,12 +184,6 @@ def validate_public_boundary(errors: list[str]) -> None:
 
 
 def validate_portable_paths(errors: list[str]) -> None:
-    work_log = (SKILLS_ROOT / "work-log-claude" / "SKILL.md").read_text(encoding="utf-8")
-    if 'SKILL_DIR="<skill_path>"' not in work_log:
-        errors.append("work-log-claude must resolve its runtime from <skill_path>")
-    if 'SKILL_DIR="$HOME/.claude/skills/work-log-claude"' in work_log:
-        errors.append("work-log-claude must not assume the Claude Code global path")
-
     notify = (SKILLS_ROOT / "custom-skills-notify" / "SKILL.md").read_text(
         encoding="utf-8"
     )
