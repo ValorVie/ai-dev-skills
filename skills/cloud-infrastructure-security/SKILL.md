@@ -3,7 +3,7 @@ name: cloud-infrastructure-security
 description: |
   雲端基礎設施安全檢查清單與最佳實踐。
   Use when: 部署到雲端平台、配置 IAM、設定 CI/CD pipeline、實作 IaC、配置監控或管理 secrets。
-  Triggers: "cloud security", "IAM policy", "CI/CD security", "Terraform security", "Cloudflare WAF", "雲端安全", "基礎設施安全".
+  中文或英文提出上述需求時都適用。
 ---
 
 # Cloud & Infrastructure Security Skill | 雲端基礎設施安全

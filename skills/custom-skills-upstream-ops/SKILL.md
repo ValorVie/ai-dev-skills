@@ -3,7 +3,7 @@ name: custom-skills-upstream-ops
 description: |
   Unified upstream repo operations: audit commit drift, check UDS file-level drift, detect repo overlap with local project, and perform sync maintenance.
   Use when: reviewing upstream updates, auditing standards drift, evaluating a new repo for integration, updating last-sync.yaml after sync.
-  Triggers: "upstream audit", "uds check", "repo overlap", "sync maintenance", "上游同步", "上游檢查", "上游維護".
+  Applies to requests written in English or Chinese.
 ---
 
 # Upstream Ops | 上游操作統一入口

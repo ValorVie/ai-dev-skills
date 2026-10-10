@@ -4,7 +4,6 @@ description: |
   Analyze tooling overlap and optimization opportunities in AI-assisted development projects.
   Use when: (1) auditing project tooling ecosystem, (2) identifying duplicate or redundant tools,
   (3) finding consolidation opportunities, (4) generating tooling health reports.
-  Triggers: "analyze tools", "tool overlap", "tooling audit", "redundant skills", "consolidate commands"
 ---
 
 # Tool Overlap Analyzer
