@@ -8,7 +8,6 @@
 |---------------|---------|---------|------|
 | `plugin` | `claude plugin update <plugin_id>` + 重啟 Claude Code | superpowers | 不需手動複製檔案 |
 | `ai-dev` | `ai-dev update --only repos` → `ai-dev clone` | obsidian-skills, anthropic-skills | 自動同步到 `skills/` |
-| `standards` | `ai-dev update --only repos` → `ai-dev clone` → `uds-check` mode 做 diff | universal-dev-standards | `.standards/` 需逐檔合併 |
 | `selective` | `ai-dev clone`（讀 `distribution.yaml` 過濾） | everything-claude-code | 依排除清單選擇性分發 |
 | `manual` | 手動比對與複製 | （本專案目前無） | 本地有深度客製時用 |
 
@@ -16,7 +15,6 @@
 
 - **plugin 類型顯示 High 變動**：不代表要手動複製檔案，只需 `claude plugin update`
 - **ai-dev 類型顯示有變更**：先跑 `ai-dev clone`，可能 diff 已為零
-- **standards 類型**：需注意本地 `.standards/` 可能有客製化修改（見 `uds-check` 的 `only_local` 類別）
 - **selective 類型**：`distribution.yaml` 的 exclude list 會過濾掉特定 skill
 
 ## 同步後必做

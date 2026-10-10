@@ -37,7 +37,6 @@
 5. **依 `references/install-methods.md` 產出同步命令**：
    - plugin → `claude plugin update <id>`
    - ai-dev → `ai-dev update --only repos` 然後 `ai-dev clone`
-   - standards → 同上 + `uds-check` mode
    - selective → `ai-dev clone`
    - manual → 手動
 
@@ -77,12 +76,6 @@
 
 ```markdown
 ## Upstream Audit — 2026-04-18
-
-### universal-dev-standards (standards)
-- 53 commits behind · 優先級：High
-- 主要變更：XSPEC-035~044（雙階段輸出、斷路器、token budget）、DEC-043 Wave 1 Reliability、anti-sycophancy-prompting
-- 同步：`ai-dev update --only repos` → `ai-dev clone` → `/custom-skills-upstream-ops uds-check` 處理檔案合併
-- 備註：新增 6 份 meta standards，影響現有 .standards/ 閱讀結構
 
 ### superpowers (plugin)
 - 12 commits behind · 優先級：Medium

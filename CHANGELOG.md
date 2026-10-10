@@ -7,6 +7,7 @@
 - `custom-skills-ecc-analyze` 移除已退役的 `uds` 與寫死的 skill 數量。
 - `custom-skills-ecc-analyze`、`custom-skills-dev`、`custom-skills-doc-updater` 的 description 移除觸發片語清單，保留 Use when 的意圖說明。
 - `cloud-infrastructure-security`、`custom-skills-tool-overlap-analyzer`、`custom-skills-plan-analyze`、`custom-skills-upstream-ops` 的 description 移除觸發片語清單；中英文雙語的清單改成一句說明中英文需求都適用。
+- `custom-skills-upstream-ops` 隨 ai-dev 退役 UDS：移除 `uds-check` 模式與 `scripts/check_uds.py`，`overlap` 不再產生 `.standards/profiles/overlaps.yaml` 片段，audit／maintenance／install-methods 移除 UDS 範例。
 - `first-principles` 升為 v0.3.1：description 的 17 個觸發片語改成一段情境說明；README 註明這是相對上游唯一的修改。
 - 移除 `work-log-claude`。工作日誌改由 ai-dev 專案範本提供的 `work-log-codex` 處理，Claude Code 與 Codex 共用同一套解析器；只讀 Claude Code 紀錄時用範本的 `.claude/skills/work-log-claude` 薄包裝。skill collection 更新為 19 個 skills。
 

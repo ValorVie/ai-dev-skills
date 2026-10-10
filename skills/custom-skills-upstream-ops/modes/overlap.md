@@ -43,7 +43,7 @@
    - 標註重疊類型
    - 給整合建議
 
-6. **輸出 Markdown 摘要到對話**，含可複製的 YAML 片段（對話內，不寫檔）
+6. **輸出 Markdown 摘要到對話**（不寫檔）
 
 ## 輸出格式
 
@@ -68,40 +68,21 @@
 #### Functional Overlap（功能重疊）
 | 本地 | 目標 | 關鍵字 | 建議 |
 |------|------|-------|------|
-| `testing-guide` | `tdd-runner` | tdd, test | 補充互補，考慮同 profile 只留一個 |
+| `testing-guide` | `tdd-runner` | tdd, test | 補充互補，考慮只保留一個 |
 
 ### 全新項目（目標有、本地無）
 
 1. `<new-skill-1>` — <功能說明> — 建議：可直接整合／評估後整合／跳過
 2. ...
 
-### 建議 overlaps.yaml 片段
-
-> 若決定在 Profile 切換時管理這些重疊，可把下列片段加入 `.standards/profiles/overlaps.yaml`。**只是建議，請人工審閱後再貼上。**
-
-```yaml
-groups:
-  testing-related:
-    description: "測試相關（本地 testing-guide ↔ 目標 tdd-runner）"
-    mutual_exclusive: true
-    local:
-      skills:
-        - testing-guide
-    <target-profile-name>:
-      skills:
-        - tdd-runner
-```
-
 ### 下一步
 
 - 若決定整合：用 `audit` mode 取得 commit 差異、實際同步
 - 若決定排除：加入 `upstream/distribution.yaml` 的 `exclude` 列表（ECC-style）
-- 若為 Profile 管理：貼上上述 YAML 片段到 `.standards/profiles/overlaps.yaml`
 ```
 
 ## 明確不做
 
-- ❌ 不自動寫 `overlaps.yaml.draft` 到檔案（YAML 片段只輸出到對話）
 - ❌ 不計算數值相似度分數（權重 40/30/30 那套）
 - ❌ 不呼叫 Python 腳本
 

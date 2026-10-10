@@ -30,7 +30,7 @@
 
 範例：
 ```
-/custom-skills-upstream-ops maintenance update-last-sync universal-dev-standards
+/custom-skills-upstream-ops maintenance update-last-sync superpowers
 ```
 
 ### archive-reports
@@ -38,7 +38,7 @@
 用途：把 `upstream/reports/` 下過期（預設 > 90 天）的報告移到 `upstream/reports/archive/`。
 
 執行流程：
-1. 掃描 `upstream/reports/{structured,new-repos,analysis,uds-update,audit}/` 的所有檔案
+1. 掃描 `upstream/reports/{structured,new-repos,analysis,audit}/` 的所有檔案
 2. 比對 mtime 與今日差距
 3. 對 > 90 天的檔案列出清單
 4. **人工確認**：顯示清單，「確認移動？」
