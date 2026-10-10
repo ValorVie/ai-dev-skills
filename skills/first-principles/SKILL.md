@@ -1,8 +1,8 @@
 ---
 name: first-principles
-description: This skill should be used when the user asks to "analyze from first principles", "第一性原理", "从根本分析", "从零开始思考", "think from scratch", "question this design", "这个设计合理吗", "is this the right approach", "为什么要这样做", "why are we doing it this way", "有没有更好的方案", "is there a better solution", "challenge assumptions", "挑战假设", "should this even exist", "這個需求合理嗎", "先刪除", or needs to evaluate architectural decisions, design choices, or problem-solving approaches without relying on analogies or conventions.
+description: 從根本重新檢查一個設計、需求或做法是否成立：拿掉慣例和類比，回到目的與限制，判斷它該不該存在、有沒有更簡單的方案。適用於使用者質疑現有設計、要求從零思考或挑戰假設時。
 metadata:
-  version: 0.3.0
+  version: 0.3.1
 ---
 
 # First Principles Thinking

@@ -6,10 +6,10 @@
 
 - **原始 repo**：<https://github.com/danyuchn/first-principles-skill>
 - **上游**：<https://github.com/tt-a1i/first-principles-skill>（v0.2.0）
-- **目前版本**：v0.3.0
+- **目前版本**：v0.3.1
 - **授權**：MIT（沿用上游）
 
-此 skill 從原始 repo 直接複製進來，未做修改。如需更新，請從原始 URL 重新拉取。
+此 skill 從原始 repo 複製進來，只改了 `SKILL.md` 的 description（v0.3.1：觸發片語清單改成情境說明），其餘未修改。從原始 URL 重新拉取更新時，要保留這項修改。
 
 ## 主要差異化
 
@@ -42,7 +42,7 @@
 
 ```
 first-principles/
-├── SKILL.md                       # 主要 skill 定義（v0.3.0）
+├── SKILL.md                       # 主要 skill 定義（v0.3.1）
 ├── README.md                      # 本檔
 ├── LICENSE                        # MIT
 ├── references/
