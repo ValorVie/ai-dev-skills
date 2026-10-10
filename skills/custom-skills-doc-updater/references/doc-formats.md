@@ -178,36 +178,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Module READMEs
 
-### sources/ecc/README.md
-
-```markdown
-# Everything Claude Code (ECC) 資源
-
-來源: [repo-link]
-整合日期: YYYY-MM-DD
-授權: License
-
-## 概述
-[What this contains]
-
-## 目錄結構
-```
-[Directory tree]
-```
-
-## [Resource Type]
-
-| Name | Description |
-|------|-------------|
-| `name` | Description |
-
-## 安裝方式
-[Installation methods]
-
-## 注意事項
-[Important notes]
-```
-
 ### upstream/README.md
 
 ```markdown
@@ -229,26 +199,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 相關 Skills
 [Related skills]
-```
-
-### commands/claude/README.md
-
-```markdown
-# Claude Code Custom Commands
-
-## Available Commands | 可用命令
-
-### [Category] | 類別名稱
-
-| Command | Description | 說明 |
-|---------|-------------|------|
-| [`/cmd`](./cmd.md) | English desc | 中文說明 |
-
-## Commands vs Skills | 命令與技能
-[Comparison table]
-
-## Adding Custom Commands | 新增自訂命令
-[How to add new commands]
 ```
 
 ---

@@ -123,7 +123,7 @@ Prefer using the imperative form in instructions.
 **Defining output formats** - You can do it like this:
 ```markdown
 ## Report structure
-ALWAYS use this exact template:
+Use this template:
 # [Title]
 ## Executive summary
 ## Key findings

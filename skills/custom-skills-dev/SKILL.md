@@ -4,8 +4,7 @@ description: |
   Guide development of the ai-dev framework and its first-party skill collection.
   Use when modifying ai-dev CLI code, npx skill integration, copy/distribution logic,
   commands, agents, plugins, first-party skills, tests, or release documentation.
-  Triggers: "develop custom-skills", "modify ai-dev", "add skill", "update distribution",
-  "release version", "開發 custom-skills", "修改 ai-dev", "新增 skill", "發布版本".
+  Applies to requests written in English or Chinese.
 ---
 
 # custom-skills-dev

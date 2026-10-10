@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- `custom-skills-doc-updater` 改寫成「範圍 → 變更類型與要看的文件 → 更新方式 → 完成檢查」：未指定範圍時直接分析最近 1 個 commit，不再跳出選單；移除逐步驟的中間報告範本，以及已不存在的 `sources/`、`.standards/`、`agents/claude/README.md`、`commands/claude/README.md` 路徑。
+- `custom-skill-creator` 的輸出格式範例改用一般語氣（不再示範全大寫 ALWAYS），benchmark schema 範例的模型 ID 改為佔位字串。
+- `custom-skills-ecc-analyze` 移除已退役的 `uds` 與寫死的 skill 數量。
+- `custom-skills-ecc-analyze`、`custom-skills-dev`、`custom-skills-doc-updater` 的 description 移除觸發片語清單，保留 Use when 的意圖說明。
+
 ## 0.1.2 - 2026-09-29
 
 - 新增 `safe-run`，依 host-aware、task-isolated 與 mixed workflow 在 harness 原生沙盒與 OpenShell 之間路由。

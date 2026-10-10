@@ -6,8 +6,7 @@ description: |
   (B) 新項目導入評估：根據 ecc-catalog.yaml 與上次更新範圍，介紹 ECC 上游新增 skill、分析適用情境、建議是否加入 enabled。
   Use when: (1) 評估 ECC 分發名單是否該瘦身、(2) ECC 上游新增 skill 後決定要不要導入、
   (3) 想為終端使用者產 ecc-profile.yaml starter、(4) 季度 / 半年一次定期審視。
-  Triggers: "分析 ECC skill", "ECC 重疊", "ECC 清單瘦身", "ECC 新項目", "ECC 上游新增",
-  "要不要導入", "ecc analyze", "ecc new items review", "ecc profile starter", "ECC 品質審視".
+  中文或英文提出上述需求時都適用。
 ---
 
 # Custom Skills — ECC Analyze
@@ -99,7 +98,7 @@ done
 把第一方 skill 按角色分群，因為角色相同的 skill 才有機會跟 ECC 重疊：
 
 ```
-   個人工具流          → custom-* (10)
+   個人工具流          → custom-*
    framework workflow  → custom-skills-*
    個人化輸出          → wiki, work-log-*
    思考框架            → first-principles
@@ -107,7 +106,7 @@ done
    跨 AI 工具          → discuss-multi-ai
 ```
 
-`uds`、`work-log-*` 是內部專屬，**不會跟 ECC 重疊**（ECC 沒這些概念）。**Step 4 只需比對其餘群組**。
+`work-log-*` 是內部專屬，**不會跟 ECC 重疊**（ECC 沒這些概念）。**Step 4 只需比對其餘群組**。
 
 ---
 
