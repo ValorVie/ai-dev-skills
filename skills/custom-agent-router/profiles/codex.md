@@ -8,7 +8,7 @@
 
 | 項目 | 值 | 證據 |
 |------|----|------|
-| Codex CLI | `0.154.0` | `codex --version` |
+| Codex CLI | `0.162.1` | `codex --version` |
 | Multi-agent | 現行版本預設可用，且本機 `multi_agent` stable | Codex 官方 Subagents 文件、`codex features list` |
 | Session 上限 | 最多 15 threads | `.codex/config.toml` 的 `max_concurrent_threads_per_session = 15` |
 

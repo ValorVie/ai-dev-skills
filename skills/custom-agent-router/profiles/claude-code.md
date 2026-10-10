@@ -9,7 +9,7 @@
 
 | 項目 | 值 | 證據 |
 |------|----|------|
-| Claude Code | `2.1.284` | `claude --version` |
+| Claude Code | `2.1.296` | `claude --version` |
 | 角色檔位置 | 專案 `.claude/agents/*.md`；使用者 `~/.claude/agents/*.md` | 官方 Subagents 文件 |
 | 角色檔格式 | YAML frontmatter 加 Markdown system prompt；必填 `name`、`description` | 同上 |
 | `model` 欄位 | 接受 alias、完整 model ID 或 `inherit` | 同上 |
