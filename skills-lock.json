@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "skills": {
+    "custom-skills-dev": {
+      "source": "ValorVie/ai-dev-skills",
+      "sourceType": "github",
+      "skillPath": "skills/custom-skills-dev/SKILL.md",
+      "computedHash": "97f5155bc77ed433c06b70ce9e4b7db01b70a74b313a49f8dc4a9e35dc9afee5"
+    },
+    "custom-skills-doc-updater": {
+      "source": "ValorVie/ai-dev-skills",
+      "sourceType": "github",
+      "skillPath": "skills/custom-skills-doc-updater/SKILL.md",
+      "computedHash": "d0e5d86cb360496e7dad9999e1c30280698d0e65f37b2a1ff903bc6f07df2ec1"
+    },
+    "custom-skills-ecc-analyze": {
+      "source": "ValorVie/ai-dev-skills",
+      "sourceType": "github",
+      "skillPath": "skills/custom-skills-ecc-analyze/SKILL.md",
+      "computedHash": "77a2fdf2ca94cd370f58e37cb00b69c8487eef147b2e6d1fffbba98c6c89f02f"
+    },
+    "custom-skills-tool-overlap-analyzer": {
+      "source": "ValorVie/ai-dev-skills",
+      "sourceType": "github",
+      "skillPath": "skills/custom-skills-tool-overlap-analyzer/SKILL.md",
+      "computedHash": "c607ef2d68f72ec8b7e8a671f71915fce39fc2162507affae2c14c42df1303bc"
+    },
+    "custom-skills-upstream-ops": {
+      "source": "ValorVie/ai-dev-skills",
+      "sourceType": "github",
+      "skillPath": "skills/custom-skills-upstream-ops/SKILL.md",
+      "computedHash": "4b826b3c90c7345783f288e134a160ae48b31813cbdac9c2cadf5e5376429ab1"
+    }
+  }
+}
