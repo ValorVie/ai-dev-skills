@@ -43,6 +43,8 @@
 | `dolt.auto-push-interval` | 拒絕 | 設定／預設 | `cmd/bd/dolt_autopush.go:135` |
 | `dolt.auto-push-timeout` | 拒絕 | 設定／預設 | `cmd/bd/dolt_autopush.go:163` |
 | `dolt.auto-start` | 拒絕 | 設定／預設 | `internal/doltserver/doltserver.go:175`、`internal/storage/dolt/open.go:176`、`internal/storage/dolt/open.go:178` |
+| `dolt.data-dir` | 拒絕 | 設定寫入／metadata | `cmd/bd/dolt.go:2140,2169`、`internal/configfile/configfile.go:203-211` |
+| `dolt.database` | 拒絕 | 設定寫入／metadata | `cmd/bd/dolt.go:2106-2111` |
 | `dolt.debug` | 拒絕 | YAML 登記、設定／預設 | `internal/config/yaml_config.go:95`、`internal/doltserver/doltserver.go:128` |
 | `dolt.host` | 拒絕 | 設定／預設 | `cmd/bd/backup_auto.go:112`、`cmd/bd/init.go:769`、`internal/configfile/configfile.go:433` |
 | `dolt.local-only` | 拒絕 | 設定／預設 | `cmd/bd/dolt_local_only.go:9` |
@@ -52,6 +54,8 @@
 | `dolt.pool-write-timeout` | 拒絕 | YAML 登記、設定／預設 | `internal/config/yaml_config.go:94`、`internal/storage/dolt/open.go:349` |
 | `dolt.port` | 拒絕 | 設定／預設 | `cmd/bd/bootstrap.go:721`、`cmd/bd/init.go:771`、`internal/doltserver/doltserver.go:828` |
 | `dolt.shared-server` | 拒絕 | YAML 登記、設定／預設、間接讀取 | `cmd/bd/bootstrap.go:681`、`cmd/bd/config_apply.go:414`、`cmd/bd/migrate_dolt_mode.go:1200` |
+| `dolt.socket` | 拒絕 | 設定寫入／metadata | `cmd/bd/dolt.go:2128-2131` |
+| `dolt.user` | 拒絕 | 設定寫入／metadata | `cmd/bd/dolt.go:2133-2138` |
 | `events-export` | 其他 | 設定／預設 | `internal/config/config.go:217` |
 | `events-journal` | 其他 | YAML 登記、設定／預設、間接讀取 | `internal/config/config.go:223`、`internal/config/yaml_config.go:31`、`internal/eventsjournal/activation.go:30` |
 | `events-journal-auto-prune` | 其他 | YAML 登記、設定／預設、間接讀取 | `internal/config/config.go:244`、`internal/config/yaml_config.go:34`、`internal/eventsjournal/autoprune.go:61` |
