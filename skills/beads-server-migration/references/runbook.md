@@ -20,9 +20,11 @@ PY=(uv run --offline --python 3.14 --no-project python -I -B)
 
 讀回 hostname、帳號、repo 真實路徑、群組、資料庫、服務名稱及通訊埠，與設定檔逐項比對。第一次切換的 repo 是否為操作者核准的目標，必須由操作者人工核對設定檔；工具無法辨識原本核准的是哪個 repo。確認 repo 的 `.beads.gate.lock` 已存在且能由執行帳號開啟；不得刪除或重建 gate 檔。目標 `.beads/.env`、`.beads/redirect`、`.beads/config.local.yaml` 或選庫環境變數存在時先查明並排除。工具會拒絕已設定的選庫變數，包括空值，不顯示其值。
 
-切換前整理 `.beads/config.yaml`：只使用簡單的單行純量與巢狀鍵值；頂層不可有 `sync:`，平鋪 `sync.remote:` 至多一行，且值須為非空的單行字串。工具無法判讀的格式及重複鍵會停止，請先整理並重新預覽。不得設定 `BD_SYNC_REMOTE` 或 `BD_SYNC_GIT_REMOTE`，避免環境變數覆寫暫存副本的本機遠端；工具不會修改來源設定。
+切換前整理 `.beads/config.yaml` 與使用者設定：只使用簡單的單行純量與巢狀鍵值。專案及使用者設定的 `dolt` 命名空間只支援 `dolt.max-conns`，平鋪及巢狀皆可；其他 Dolt 鍵須先移除。無法判讀的格式及重複鍵會停止，請先整理並重新預覽。
 
-專案與使用者設定不得有頂層 `db` 鍵。工具檢查 `$HOME/.beads/config.yaml`、`$HOME/.config/bd/config.yaml` 及 `${XDG_CONFIG_HOME:-$HOME/.config}/bd/config.yaml`；使用者設定存在卻讀不到或格式無法判讀時停止，請先確認權限及整理成簡單鍵值。工具以 `BEADS_DIR` 綁定每個 `bd` 子程序，暫存副本提交前另用 `bd where --json` 核對工作區及資料庫路徑。
+專案與使用者設定不得有 `db`、`no-db`、`backend`、`database`、`no-push`、`no-git-ops`，也不得有 `routing`、`contributor`、`repos`、`external_projects`、`sync`、`federation`、`backup`、`github`、`gitlab`、`linear`、`jira`、`ado`、`notion`、`ai` 或 `metrics` 命名空間的鍵。包含 `sync.remote` 與 `sync.git-remote`；須先移除再預覽。工具檢查 `$HOME/.beads/config.yaml`、`$HOME/.config/bd/config.yaml` 及 `${XDG_CONFIG_HOME:-$HOME/.config}/bd/config.yaml`；使用者設定存在卻讀不到或格式無法判讀時停止，請先確認權限及整理成簡單鍵值。完整盤點及原碼位置見 [config-keys.md](config-keys.md)。
+
+工具以 `BEADS_DIR` 綁定每個 `bd` 子程序，並固定 `BD_ROUTING_MODE=explicit`、`BD_ROUTING_DEFAULT=.`，避免資料庫內路由把讀取導向其他 repo。操作者不得自行設定選庫、路由或受限命名空間的環境變數。暫存副本提交前另用 `bd where --json` 核對工作區及資料庫路徑；此讀回不能單獨證明儲存模式。工具只允許自己在身分已核對的 scratch 寫入本機 `sync.remote`，不修改來源設定。
 
 切換前與切換後，資料庫都必須只有一個 `main` 分支。切換前以已授權且不修改資料的方式確認；工具的第一次預覽不檢查分支。若有其他分支或無法確認，停止並保留資料，另訂保留完整資料的回復方案，不刪分支、不放寬指紋檢查。
 
