@@ -112,6 +112,8 @@ systemctl --user is-active "${UNIT##*/}"
 
 繼續保持其他程序停止，於目標主機以執行帳號進入 repo，核對 `bd --readonly where --json` 與 `bd --readonly dolt show --json` 的工作區、資料庫、`127.0.0.1`、通訊埠與 `connection_ok`；再核對服務 `active`／`enabled`。以各實際使用帳號讀回同一筆資料；取得寫入授權後再寫入並由另一帳號讀回。驗證各 worktree 的 Git hook 實際呼叫 `bd` 並連到預期服務、驗證匯出與 `issues.jsonl` 新鮮度，以及實際的 `dolt.auto-commit`／`export.auto` 設定與環境覆寫。驗證使用者應在其自己的 shell 執行；shim 只換帳號時還須先切換工作目錄。未觀察到連線、任一帳號讀不到或資料不一致就停止並保留證據。
 
+同時讀回 `export.git-add` 設定，並檢查各執行環境的 `BD_EXPORT_GIT_ADD` 覆寫；環境變數優先。此值為 `true` 時，符合匯出條件且未停用 Git 操作的 `bd` 會把匯出檔自動加入 Git 暫存區。提交前以 `git diff --cached` 檢查暫存內容。
+
 取得適用的 Git 授權後，將切換後已核對的 `metadata.json` 納入提交。Dolt backup／restore 不帶 remotes，重新核對遠端；`dolt.auto-commit` 為 off 時，按授權執行 `bd dolt commit` 再同步。`bd dolt push` 的完整性檢查逾時時，查明原因，必要時提高 `BEADS_FSCK_TIMEOUT`，不要略過完整性檢查。
 
 ## 退回及再次切換
