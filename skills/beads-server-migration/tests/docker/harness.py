@@ -57,17 +57,18 @@ for kind, uid, gid, other, port, database, service in cases:
                    'init': True, 'skill_readonly': True, 'source_readonly': kind == 'copy'}, output, indent=2)
         output.write('\n')
     with (logs / (kind + '-prepare.log')).open('x') as output:
-        subprocess.run(['docker', 'exec', name, 'python3.14', '/skill/tests/docker/prepare.py',
+        subprocess.run(['docker', 'exec', name, 'uv', 'run', '--offline', '--python', '3.14', '--no-project', 'python', '-I', '-B', '/skill/tests/docker/prepare.py',
                         '--kind', kind, '--uid', str(uid), '--gid', str(gid), '--other-uid', str(other),
                         '--port', str(port), '--database', database, '--service', service],
                        check=True, stdout=output, stderr=subprocess.STDOUT, timeout=1200)
     for who, script in ((uid, 'non-dumpable.py'), (other, 'other-idle.py')):
-        subprocess.run(['docker', 'exec', '-d', '-u', f'{who}:{gid}', name, 'python3.14',
+        subprocess.run(['docker', 'exec', '-d', '-u', f'{who}:{gid}', '-e', 'HOME=/experiment/home', name,
+                        'uv', 'run', '--offline', '--python', '3.14', '--no-project', 'python', '-I', '-B',
                         '/skill/tests/docker/' + script], check=True)
     with (logs / (kind + '-cycle.log')).open('x') as output:
         subprocess.run(['docker', 'exec', '-u', f'{uid}:{gid}', '-w', '/experiment/repo',
                         '-e', 'HOME=/experiment/home', '-e', 'UV_OFFLINE=1', '-e', 'DOLT_ROOT_PATH=/experiment/dolt-root',
-                        name, 'python3.14', '/skill/tests/docker/cycle.py'],
+                        name, 'uv', 'run', '--offline', '--python', '3.14', '--no-project', 'python', '-I', '-B', '/skill/tests/docker/cycle.py'],
                        check=True, stdout=output, stderr=subprocess.STDOUT, timeout=7200)
     print(kind + ' cycle passed', flush=True)
 for name in names:

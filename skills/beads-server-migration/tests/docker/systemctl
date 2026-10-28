@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.14
+#!/usr/bin/env -S uv run --offline --python 3.14 --no-project python -I -B
 """Docker-only systemctl stand-in for the disposable local service."""
 import json
 import os

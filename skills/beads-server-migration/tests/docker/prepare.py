@@ -107,9 +107,9 @@ target = root / 'target.json'
 target.write_text(json.dumps(config, indent=2) + '\n')
 os.chown(target, args.uid, args.gid)
 os.chmod(target, 0o660)
-user(['python3.14', '/skill/scripts/render-unit.py', '--config', str(target)], cwd=root)
 with (root / 'unit.service').open('w') as stream:
-    subprocess.run(['runuser', '-u', 'fixtureuser', '--', 'python3.14', '/skill/scripts/render-unit.py', '--config', str(target)],
+    subprocess.run(['runuser', '-u', 'fixtureuser', '--', 'uv', 'run', '--offline', '--python', '3.14',
+                    '--no-project', 'python', '-I', '-B', '/skill/scripts/render-unit.py', '--config', str(target)],
                    cwd=root, env=env, stdout=stream, check=True)
 os.chown(root / 'unit.service', args.uid, args.gid)
 print('disposable fixture prepared')
