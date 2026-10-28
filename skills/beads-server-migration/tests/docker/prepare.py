@@ -82,17 +82,33 @@ if count == 0:
 elif count != 1:
     raise SystemExit('multiple sync remotes')
 config_file.write_text(contents)
+subprocess.run(['setfacl', '-R', '-b', '--', str(beads)], check=True)
 for directory, dirs, files in os.walk(beads, followlinks=False):
     for path in [Path(directory), *(Path(directory) / n for n in dirs + files)]:
         if path.is_symlink():
             continue
         os.chown(path, args.uid, args.gid)
         os.chmod(path, 0o2770 if path.is_dir() else 0o660)
-subprocess.run(['setfacl', '-R', '-m', 'u::rwX,g::rwX,o::---', str(beads)], check=True)
-for directory, _, _ in os.walk(beads, followlinks=False):
-    subprocess.run(['setfacl', '-m', 'd:u::rwx,d:g::rwx,d:o::---', directory], check=True)
+subprocess.run(['setfacl', '-R', '-m', f'g:{args.gid}:rwx', '--', str(beads)], check=True)
+for directory, dirs, files in os.walk(beads, followlinks=False):
+    for name in files:
+        path = Path(directory) / name
+        if not path.is_symlink():
+            os.chmod(path, 0o660)
+    subprocess.run(['setfacl', '-k', '--', directory], check=True)
+    subprocess.run(['setfacl', '-m', f'd:u::rwx,d:g::rwx,d:g:{args.gid}:rwx,d:m::rwx,d:o::---', '--', directory], check=True)
+    os.chmod(directory, 0o2770)
 manifest = beads / 'embeddeddolt' / args.database / '.dolt/noms/manifest'
-os.chmod(manifest, 0o600)
+for path in (manifest, beads / 'export-state.json'):
+    if path.is_file():
+        subprocess.run(['setfacl', '-m', f'u::rw-,g::rwx,g:{args.gid}:rwx,m::---,o::---', '--', str(path)], check=True)
+issues = beads / 'issues.jsonl'
+if issues.is_file():
+    subprocess.run(['setfacl', '-m', f'u::rw-,g::rwx,g:{args.gid}:rwx,m::r--,o::r--', '--', str(issues)], check=True)
+acl = subprocess.run(['getfacl', '-R', '-n', '-c', '--', str(beads)], check=True, capture_output=True, text=True).stdout
+named_groups = re.findall(r'^(?:default:)?group:(\d+):', acl, flags=re.M)
+if any(int(group) != args.gid for group in named_groups) or re.search(r'^(?:default:)?user:\d+:', acl, flags=re.M):
+    raise SystemExit('fixture retained unexpected named ACL')
 os.chown(beads / 'metadata.json', args.other_uid, args.gid)
 gate = repo / '.beads.gate.lock'
 gate.touch(exist_ok=True)
