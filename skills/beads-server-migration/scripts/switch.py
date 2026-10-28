@@ -96,6 +96,8 @@ def isolate_sync_remote(text, remote):
                           or (not re.search(r"[\[\]{}'\"&*!|>%@`]|:\s", value)
                               and not value.startswith(('-', '?', ':', '#')))):
             raise ValueError(message)
+        if not indent and key == 'sync.remote' and value.lower() in ('', 'null', '~', '""', "''"):
+            raise ValueError(message)
         stack.append((indent, key, not value))
         if not indent and key == 'sync.remote':
             remote_line = index

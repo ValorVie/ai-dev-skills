@@ -20,7 +20,7 @@ PY=(uv run --offline --python 3.14 --no-project python -I -B)
 
 讀回 hostname、帳號、repo 真實路徑、群組、資料庫、服務名稱及通訊埠，與設定檔逐項比對。確認 repo 的 `.beads.gate.lock` 已存在且能由執行帳號開啟；不得刪除或重建 gate 檔。目標 `.beads/.env` 或 `.beads/redirect`、選庫環境變數存在時先查明並排除。工具會拒絕已設定的選庫變數，包括空值，不顯示其值。
 
-切換前整理 `.beads/config.yaml`：只使用簡單的單行純量與巢狀鍵值；頂層不可有 `sync:`，平鋪 `sync.remote:` 至多一行。工具無法判讀的格式及重複鍵會停止，請先整理並重新預覽。不得設定 `BD_SYNC_REMOTE` 或 `BD_SYNC_GIT_REMOTE`，避免環境變數覆寫暫存副本的本機遠端；工具不會修改來源設定。
+切換前整理 `.beads/config.yaml`：只使用簡單的單行純量與巢狀鍵值；頂層不可有 `sync:`，平鋪 `sync.remote:` 至多一行，且值須為非空的單行字串。工具無法判讀的格式及重複鍵會停止，請先整理並重新預覽。不得設定 `BD_SYNC_REMOTE` 或 `BD_SYNC_GIT_REMOTE`，避免環境變數覆寫暫存副本的本機遠端；工具不會修改來源設定。
 
 ## Dolt 下載與安裝
 

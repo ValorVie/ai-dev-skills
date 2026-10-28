@@ -51,8 +51,10 @@ with tempfile.TemporaryDirectory(prefix='migration-entry-') as temporary:
     config_file.write_text(json.dumps(config))
     switch.configure(config_file)
     config_yaml = repo / '.beads/config.yaml'
-    for invalid in ('sync.remote: a\nsync.remote: b\n', 'sync:\n  remote: old\n'):
+    for invalid in ('sync.remote: a\nsync.remote: b\n', 'sync:\n  remote: old\n',
+                    'sync.remote:\n  url: file:///unused.git\n'):
         config_yaml.write_text(invalid)
+        before_config = config_yaml.read_bytes()
         for flags in ([], ['--apply', '--reviewed']):
             with patch.dict(os.environ, {}, clear=True), patch.object(switch, 'execution_allowed', return_value=True), \
                     patch.object(switch.state_retention, 'inspectable', return_value=True), \
@@ -63,7 +65,7 @@ with tempfile.TemporaryDirectory(prefix='migration-entry-') as temporary:
                     assert 'config.yaml' in str(error)
                 else:
                     raise AssertionError('unsafe config accepted by entrypoint')
-            assert config_yaml.read_text() == invalid and not state.exists()
+            assert config_yaml.read_bytes() == before_config and not state.exists()
     config_yaml.write_text('# fixture\n')
     digest = switch.config_digest()
     checkpoint = {'config_sha256': digest, 'repo': str(repo), 'port': 16021,

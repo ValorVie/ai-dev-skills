@@ -7,12 +7,17 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
 import switch
 
 remote = 'file:///tmp/local%20remote.git'
-for source in ('sync.remote: old\nexport:\n  auto: true\n', '# empty\n', 'other: value'):
+for source in ('sync.remote: old\nexport:\n  auto: true\n', 'sync.remote: "null"\n',
+               '# empty\n', 'other: value'):
     result = switch.isolate_sync_remote(source, remote)
     assert result.count('sync.remote:') == 1 and remote in result
     assert switch.isolate_sync_remote(result, remote) == result
 
 for source in ('sync.remote: a\nsync.remote: b\n', 'sync:\n  remote: old\n',
+               'sync.remote:\n  url: file:///unused.git\n', 'sync.remote:\n',
+               'sync.remote: old\n  url: file:///unused.git\n',
+               'sync.remote: # empty\n', 'sync.remote: ""\n', "sync.remote: ''\n",
+               'sync.remote: null\n', 'sync.remote: ~\n',
                'sync: {remote: old}\n', '"sync.remote": old\n',
                'sync.remote: |\n  old\n', 'other: [unterminated\n',
                '---\nsync.remote: old\n', 'other: &alias value\n'):
