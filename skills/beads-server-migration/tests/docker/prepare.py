@@ -60,6 +60,13 @@ if args.kind == 'copy':
     tree.rename(tree.parent / args.database)
     data['dolt_database'] = args.database
     meta.write_text(json.dumps(data, indent=2) + '\n')
+    config_yaml = repo / '.beads/config.yaml'
+    lines = config_yaml.read_text().splitlines(keepends=True)
+    remote_lines = [line for line in lines if re.match(r'^sync\.remote\s*:', line)]
+    if len(remote_lines) > 1 or any(re.match(r'^sync\s*:', line) for line in lines):
+        raise SystemExit('copy fixture has unsupported sync configuration')
+    config_yaml.write_text(''.join(line for line in lines if not re.match(r'^sync\.remote\s*:', line)))
+    print('copy fixture: removed source sync.remote from disposable copy')
 else:
     user(['bd', 'init', '--prefix', args.database, '--skip-agents', '--skip-hooks', '--non-interactive'])
     data = json.loads((repo / '.beads/metadata.json').read_text())
@@ -72,6 +79,22 @@ else:
     issue = rows[0]['id']
     user(['bd', 'comments', 'add', issue, 'fixture comment'])
     user(['bd', 'label', 'add', issue, 'fixture-label'])
+    decoy = root / 'decoy'
+    decoy.mkdir(mode=0o2770)
+    os.chown(decoy, args.uid, args.gid)
+    user(['git', 'init', '-q'], cwd=decoy)
+    user(['bd', 'init', '--prefix', 'decoy', '--skip-agents', '--skip-hooks', '--non-interactive'], cwd=decoy)
+    user(['bd', 'create', '--title', 'Decoy fixture', '--type', 'task'], cwd=decoy)
+    sql = "REPLACE INTO config (`key`, value) VALUES ('routing.mode', 'auto'), ('routing.default', '/experiment/decoy')"
+    user(['dolt', '-C', str(repo / '.beads/embeddeddolt' / args.database), 'sql', '-q', sql])
+    command = ['runuser', '-u', 'fixtureuser', '--', 'bd', '--readonly', 'list', '--all', '--limit', '0', '--json']
+    unsafe = json.loads(subprocess.run(command, cwd=repo, env=env, check=True, capture_output=True, text=True).stdout)
+    fixed_env = dict(env, BD_ROUTING_MODE='explicit', BD_ROUTING_DEFAULT='.')
+    safe = json.loads(subprocess.run(command, cwd=repo, env=fixed_env, check=True, capture_output=True, text=True).stdout)
+    if len(unsafe) != 1 or not unsafe[0]['id'].startswith('decoy-') or len(safe) != 30 or any(
+            not row['id'].startswith(args.database + '-') for row in safe):
+        raise SystemExit('database routing isolation check failed')
+    print('database routing red/green: decoy without override, fixture with override')
 beads = repo / '.beads'
 if args.kind == 'fresh' and re.search(r'^sync\.remote\s*:', (beads / 'config.yaml').read_text(), re.M):
     raise SystemExit('fresh fixture unexpectedly contains sync.remote')

@@ -61,16 +61,33 @@ BD_SELECTOR_ENV = (
     'BD_DOLT_PROXIED_SERVER', 'BEADS_DOLT_AUTO_START', 'BEADS_DOLT_CREDENTIAL_COMMAND',
     'BEADS_PRODUCTION_PORT', 'BEADS_SKIP_IDENTITY_CHECK', 'BEADS_TEST_MODE', 'BEADS_TEST_SERVER',
     'BD_SYNC_REMOTE', 'BD_SYNC_GIT_REMOTE', 'BEADS_TEST_IGNORE_REPO_CONFIG',
+    'BD_NO_DB', 'BEADS_NO_DB', 'BD_NO_PUSH', 'BEADS_NO_PUSH', 'BD_NO_GIT_OPS', 'BEADS_NO_GIT_OPS',
+    'BD_DATABASE', 'BEADS_DATABASE', 'BEADS_BACKEND', 'BEADS_DATABASE_BACKEND',
 )
+BD_SELECTOR_PREFIXES = tuple(prefix + root + '_' for prefix in ('BD_', 'BEADS_')
+                             for root in ('DOLT', 'ROUTING', 'CONTRIBUTOR', 'REPOS', 'EXTERNAL_PROJECTS',
+                                          'SYNC', 'FEDERATION', 'BACKUP', 'GITHUB', 'GITLAB', 'LINEAR',
+                                          'JIRA', 'ADO', 'NOTION', 'AI', 'METRICS'))
+BD_SELECTOR_ROOTS = tuple(prefix[:-1] for prefix in BD_SELECTOR_PREFIXES)
+
+# Beads 1.3.1 internal/storage/dolt/open.go:318-332: connection pool size only.
+DOLT_SAFE_KEYS = frozenset({'dolt.max-conns'})
+UNSAFE_CONFIG_ROOTS = frozenset({'db', 'no-db', 'backend', 'database', 'routing', 'repos',
+                                 'contributor', 'external_projects', 'sync', 'federation', 'backup', 'no-push',
+                                 'no-git-ops',
+                                 'github', 'gitlab', 'linear', 'jira', 'ado', 'notion', 'ai', 'metrics'})
 
 
-def isolate_sync_remote(text, remote, user_config=False):
+def isolate_sync_remote(text, remote, user_config=False, guard=False, allowed_sync_remote=None):
     """Accept only simple YAML mappings so an alternate sync key cannot hide."""
     message = 'config.yaml 格式不支援；請整理為簡單鍵值設定，移除頂層 sync 區塊並保留至多一行 sync.remote'
     lines = text.splitlines(keepends=True)
     keys = {}
+    dotted_keys = set()
     stack = []
     remote_line = None
+    dolt_container = False
+    dolt_value_seen = False
     for index, line in enumerate(lines):
         if not line.strip() or line.lstrip().startswith('#'):
             continue
@@ -93,6 +110,25 @@ def isolate_sync_remote(text, remote, user_config=False):
         # Restrict values to single-line scalars; reject aliases, flow collections,
         # block strings and quoted keys instead of guessing their YAML meaning.
         value = re.split(r'\s+#', value, maxsplit=1)[0].strip()
+        dotted = '.'.join(path)
+        if guard:
+            if dotted in dotted_keys:
+                raise ValueError(message)
+            dotted_keys.add(dotted)
+            root = dotted.split('.')[0]
+            if root in UNSAFE_CONFIG_ROOTS:
+                permitted = (dotted == 'sync.remote' and len(path) == 1 and allowed_sync_remote is not None
+                             and value == json.dumps(allowed_sync_remote))
+                if not permitted:
+                    raise ValueError('config.yaml 含不支援的選庫、連線或推送鍵；請移除後重新預覽')
+            if root == 'dolt':
+                if dotted == 'dolt' and not value and len(path) == 1:
+                    dolt_container = True
+                elif dotted in DOLT_SAFE_KEYS and value:
+                    if len(path) > 1 and path[0] == 'dolt':
+                        dolt_value_seen = True
+                else:
+                    raise ValueError('config.yaml 的 dolt 設定不在白名單；請移除後重新預覽')
         if value and not (re.fullmatch(r'"(?:[^"\\]|\\["\\/bfnrt]|\\u[0-9a-fA-F]{4})*"', value)
                           or re.fullmatch(r"'(?:[^']|'')*'", value)
                           or (not re.search(r"[\[\]{}'\"&*!|>%@`]|:\s", value)
@@ -103,6 +139,8 @@ def isolate_sync_remote(text, remote, user_config=False):
         stack.append((indent, key, not value))
         if not indent and key == 'sync.remote':
             remote_line = index
+    if guard and dolt_container and not dolt_value_seen:
+        raise ValueError('config.yaml 的 dolt 設定不在白名單；請移除後重新預覽')
     if user_config:
         return text
     replacement = 'sync.remote: ' + json.dumps(remote) + '\n'
@@ -116,7 +154,8 @@ def isolate_sync_remote(text, remote, user_config=False):
 
 
 def reject_selector_environment():
-    names = [name for name in BD_SELECTOR_ENV if name in os.environ]
+    names = sorted(name for name in os.environ if name in BD_SELECTOR_ENV or name in BD_SELECTOR_ROOTS
+                   or name.startswith(BD_SELECTOR_PREFIXES))
     if names:
         raise RuntimeError('已設定選庫或測試環境變數：' + ', '.join(names))
 
@@ -149,15 +188,33 @@ def reject_workspace_overrides(beads, env=None):
             text = path.read_bytes().decode('utf-8')
         except (OSError, UnicodeError) as error:
             raise RuntimeError('無法讀取設定檔；請確認讀取權限及格式後重新預覽') from error
-        isolate_sync_remote(text, 'file:///local-placeholder', user_config=path != beads / 'config.yaml')
+        is_project = path == beads / 'config.yaml'
+        allowed_remote = managed_sync_remote(beads) if is_project else None
+        isolate_sync_remote(text, 'file:///local-placeholder', user_config=not is_project,
+                            guard=True, allowed_sync_remote=allowed_remote)
+
+
+def managed_sync_remote(beads):
+    """Allow only the tool-created local remote in its checked scratch copy."""
+    if not CONFIG or 'state' not in CONFIG:
+        return None
+    state = Path(CONFIG['state'])
+    if beads.parent.name != 'backup-repo' or beads.parent.parent.parent != state:
+        return None
+    work = state / 'current'
+    root = scratch_root(state, work)
+    if beads != root / 'backup-repo/.beads':
+        raise ValueError('暫存工作區與檢查點不符')
+    return (work / 'remote.git').as_uri()
 
 
 def child_environment(env):
     source = dict(os.environ if env is None else env)
     # Only an explicit tool-created environment may supply the fixed local port.
     port = source.get('BEADS_DOLT_SERVER_PORT') if env is not None else None
-    for name in BD_SELECTOR_ENV:
-        source.pop(name, None)
+    for name in tuple(source):
+        if name in BD_SELECTOR_ENV or name in BD_SELECTOR_ROOTS or name.startswith(BD_SELECTOR_PREFIXES):
+            source.pop(name)
     if port is not None:
         if port != str(CONFIG['port']):
             raise ValueError('內部伺服器通訊埠不符')
@@ -212,6 +269,7 @@ def run(args, cwd=None, env=None):
     if args[0] == CONFIG['bd']:
         verify_bd_workspace(cwd, env, allow_init=len(args) > 1 and args[1] == 'init')
         env['BEADS_DIR'] = str(Path(cwd).resolve() / '.beads')
+        env.update(BD_ROUTING_MODE='explicit', BD_ROUTING_DEFAULT='.')
     log_event('開始 ' + Path(args[0]).name)
     env['DOLT_DISABLE_EVENT_FLUSH'] = '1'
     env['DOLT_METRICS_DISABLED'] = '1'
@@ -299,6 +357,7 @@ def helper(name, args, cwd, env=None):
     if name == 'snapshot.py':
         verify_bd_workspace(cwd, env)
         env['BEADS_DIR'] = str(Path(cwd).resolve() / '.beads')
+        env.update(BD_ROUTING_MODE='explicit', BD_ROUTING_DEFAULT='.')
     log_event('開始 ' + name)
     env['DOLT_DISABLE_EVENT_FLUSH'] = '1'
     env['DOLT_METRICS_DISABLED'] = '1'

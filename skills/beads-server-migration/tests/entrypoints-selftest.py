@@ -71,6 +71,29 @@ with tempfile.TemporaryDirectory(prefix='migration-entry-') as temporary:
                     raise AssertionError('unsafe config accepted by entrypoint')
             assert config_yaml.read_bytes() == before_config and not state.exists()
     config_yaml.write_text('# fixture\n')
+    for path in (config_yaml, home / '.config/bd/config.yaml'):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        original = path.read_bytes() if path.exists() else None
+        for unsafe in ('dolt.shared-server: true\n', 'dolt:\n  shared-server: true\n'):
+            path.write_text(unsafe)
+            before = path.read_bytes()
+            for module, extra in ((switch, []), (rollback, ['--immediate']),
+                                  (rollback, ['--after-write']), (reswitch, [])):
+                for flags in ([], ['--apply', '--reviewed']):
+                    with patch.dict(os.environ, clean_env, clear=True), patch.object(switch, 'execution_allowed', return_value=True), \
+                            patch.object(switch.subprocess, 'run', side_effect=AssertionError('unexpected subprocess')), \
+                            patch.object(sys, 'argv', ['tool', '--config', str(config_file), *extra, *flags]):
+                        try:
+                            module.main()
+                        except (ValueError, RuntimeError):
+                            pass
+                        else:
+                            raise AssertionError('shared server accepted by entrypoint')
+                    assert not state.exists() and path.read_bytes() == before
+        if original is None:
+            path.unlink()
+        else:
+            path.write_bytes(original)
     for path in (repo / '.beads/config.local.yaml', config_yaml, home / '.beads/config.yaml',
                  xdg / 'bd/config.yaml', home / '.config/bd/config.yaml'):
         path.parent.mkdir(parents=True, exist_ok=True)
