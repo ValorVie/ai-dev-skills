@@ -60,11 +60,11 @@ BD_SELECTOR_ENV = (
     'BD_DOLT_SERVER_HOST', 'BD_DOLT_SERVER_PORT', 'BD_DOLT_SERVER_SOCKET', 'BD_DOLT_SOCKET',
     'BD_DOLT_PROXIED_SERVER', 'BEADS_DOLT_AUTO_START', 'BEADS_DOLT_CREDENTIAL_COMMAND',
     'BEADS_PRODUCTION_PORT', 'BEADS_SKIP_IDENTITY_CHECK', 'BEADS_TEST_MODE', 'BEADS_TEST_SERVER',
-    'BD_SYNC_REMOTE', 'BD_SYNC_GIT_REMOTE',
+    'BD_SYNC_REMOTE', 'BD_SYNC_GIT_REMOTE', 'BEADS_TEST_IGNORE_REPO_CONFIG',
 )
 
 
-def isolate_sync_remote(text, remote):
+def isolate_sync_remote(text, remote, user_config=False):
     """Accept only simple YAML mappings so an alternate sync key cannot hide."""
     message = 'config.yaml 格式不支援；請整理為簡單鍵值設定，移除頂層 sync 區塊並保留至多一行 sync.remote'
     lines = text.splitlines(keepends=True)
@@ -82,7 +82,9 @@ def isolate_sync_remote(text, remote):
             stack.pop()
         if indent and (not stack or not stack[-1][2]):
             raise ValueError(message)
-        if not indent and key == 'sync':
+        if not indent and key == 'db':
+            raise ValueError('設定含頂層 db 鍵；請移除選庫設定後重新預覽')
+        if not user_config and not indent and key == 'sync':
             raise ValueError(message)
         path = tuple(item[1] for item in stack) + (key,)
         if path in keys:
@@ -96,11 +98,13 @@ def isolate_sync_remote(text, remote):
                           or (not re.search(r"[\[\]{}'\"&*!|>%@`]|:\s", value)
                               and not value.startswith(('-', '?', ':', '#')))):
             raise ValueError(message)
-        if not indent and key == 'sync.remote' and value.lower() in ('', 'null', '~', '""', "''"):
+        if not user_config and not indent and key == 'sync.remote' and value.lower() in ('', 'null', '~', '""', "''"):
             raise ValueError(message)
         stack.append((indent, key, not value))
         if not indent and key == 'sync.remote':
             remote_line = index
+    if user_config:
+        return text
     replacement = 'sync.remote: ' + json.dumps(remote) + '\n'
     if remote_line is None:
         if text and not text.endswith('\n'):
@@ -117,11 +121,35 @@ def reject_selector_environment():
         raise RuntimeError('已設定選庫或測試環境變數：' + ', '.join(names))
 
 
-def reject_workspace_overrides(beads):
-    for name in ('.env', 'redirect'):
+def reject_workspace_overrides(beads, env=None):
+    for name in ('.env', 'redirect', 'config.local.yaml'):
         path = beads / name
-        if path.exists() or path.is_symlink():
-            raise RuntimeError('工作區含可能改變選庫的檔案：' + name)
+        try:
+            path.lstat()
+        except FileNotFoundError:
+            continue
+        except OSError as error:
+            raise RuntimeError('無法檢查工作區設定；請確認讀取權限後重新預覽') from error
+        raise RuntimeError('工作區含可能改變選庫的檔案：' + name + '；請移除或整理後重新預覽')
+    env = os.environ if env is None else env
+    home = env.get('HOME', '')
+    native = env.get('XDG_CONFIG_HOME') or str(Path(home) / '.config')
+    if not Path(home).is_absolute() or not Path(native).is_absolute():
+        raise ValueError('使用者設定目錄不明；請確認 HOME 與 XDG_CONFIG_HOME 後重新預覽')
+    paths = (beads / 'config.yaml', Path(home) / '.beads/config.yaml',
+             Path(native) / 'bd/config.yaml', Path(home) / '.config/bd/config.yaml')
+    for path in dict.fromkeys(paths):
+        try:
+            path.lstat()
+        except FileNotFoundError:
+            continue
+        except OSError as error:
+            raise RuntimeError('無法檢查設定檔；請確認讀取權限後重新預覽') from error
+        try:
+            text = path.read_bytes().decode('utf-8')
+        except (OSError, UnicodeError) as error:
+            raise RuntimeError('無法讀取設定檔；請確認讀取權限及格式後重新預覽') from error
+        isolate_sync_remote(text, 'file:///local-placeholder', user_config=path != beads / 'config.yaml')
 
 
 def child_environment(env):
@@ -141,13 +169,13 @@ def verify_bd_workspace(cwd, env, allow_init=False):
     if cwd is None:
         raise ValueError('bd 子程序缺少工作區')
     beads = Path(cwd) / '.beads'
+    reject_workspace_overrides(beads, env)
     if beads.is_symlink():
         raise ValueError('bd 工作區不可為符號連結')
     if not beads.exists():
         if allow_init:
             return
         raise ValueError('bd 工作區不存在')
-    reject_workspace_overrides(beads)
     metadata = beads / 'metadata.json'
     if metadata.is_symlink() or not metadata.is_file():
         raise ValueError('bd 工作區 metadata 不可用')
@@ -183,6 +211,7 @@ def run(args, cwd=None, env=None):
         args[0] = CONFIG[args[0]]
     if args[0] == CONFIG['bd']:
         verify_bd_workspace(cwd, env, allow_init=len(args) > 1 and args[1] == 'init')
+        env['BEADS_DIR'] = str(Path(cwd).resolve() / '.beads')
     log_event('開始 ' + Path(args[0]).name)
     env['DOLT_DISABLE_EVENT_FLUSH'] = '1'
     env['DOLT_METRICS_DISABLED'] = '1'
@@ -193,6 +222,13 @@ def run(args, cwd=None, env=None):
     if proc.returncode:
         raise RuntimeError(f"{Path(args[0]).name} 失敗，退出碼 {proc.returncode}")
     return proc.stdout
+
+
+def verify_scratch_location(scratch, env):
+    location = json.loads(run(['bd', 'where', '--json'], scratch, env))
+    if (Path(location.get('path', '')).resolve() != (scratch / '.beads').resolve()
+            or Path(location.get('database_path', '')).resolve() != (scratch / '.beads/embeddeddolt').resolve()):
+        raise RuntimeError('bd 讀回的工作區或資料庫路徑與暫存副本不符；停止')
 
 
 def no_bd():
@@ -262,6 +298,7 @@ def helper(name, args, cwd, env=None):
     env = child_environment(env)
     if name == 'snapshot.py':
         verify_bd_workspace(cwd, env)
+        env['BEADS_DIR'] = str(Path(cwd).resolve() / '.beads')
     log_event('開始 ' + name)
     env['DOLT_DISABLE_EVENT_FLUSH'] = '1'
     env['DOLT_METRICS_DISABLED'] = '1'
@@ -467,6 +504,7 @@ def main():
                                                          (work / 'remote.git').as_uri()), encoding='utf-8')
             helper('snapshot.py', ['--bd', CONFIG['bd'], '--out', work / 'copy.json',
                                    '--expected', work / 'embedded.json'], scratch, env)
+            verify_scratch_location(scratch, env)
             run(['bd', '--sandbox', '--dolt-auto-commit', 'off', 'dolt', 'commit'], scratch, env)
             helper('db-fingerprint.py', ['--database', CONFIG['database'], '--local', scratch / '.beads/embeddeddolt' / CONFIG['database'],
                                          '--out', work / 'embedded-fingerprint.json'], scratch, env)

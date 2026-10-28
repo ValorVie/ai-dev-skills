@@ -33,6 +33,10 @@ with tempfile.TemporaryDirectory(prefix='migration-entry-') as temporary:
             else:
                 assert not should_block, 'active process was not rejected: ' + name
     repo, state = root / 'repo', root / 'state'
+    home, xdg = root / 'home', root / 'xdg'
+    home.mkdir()
+    xdg.mkdir()
+    clean_env = {'HOME': str(home), 'XDG_CONFIG_HOME': str(xdg)}
     (repo / '.beads').mkdir(parents=True)
     metadata = repo / '.beads' / 'metadata.json'
     metadata.write_text(json.dumps({'dolt_mode': 'embedded', 'dolt_database': 'sample_db',
@@ -56,7 +60,7 @@ with tempfile.TemporaryDirectory(prefix='migration-entry-') as temporary:
         config_yaml.write_text(invalid)
         before_config = config_yaml.read_bytes()
         for flags in ([], ['--apply', '--reviewed']):
-            with patch.dict(os.environ, {}, clear=True), patch.object(switch, 'execution_allowed', return_value=True), \
+            with patch.dict(os.environ, clean_env, clear=True), patch.object(switch, 'execution_allowed', return_value=True), \
                     patch.object(switch.state_retention, 'inspectable', return_value=True), \
                     patch.object(sys, 'argv', ['tool', '--config', str(config_file), *flags]):
                 try:
@@ -67,6 +71,46 @@ with tempfile.TemporaryDirectory(prefix='migration-entry-') as temporary:
                     raise AssertionError('unsafe config accepted by entrypoint')
             assert config_yaml.read_bytes() == before_config and not state.exists()
     config_yaml.write_text('# fixture\n')
+    for path in (repo / '.beads/config.local.yaml', config_yaml, home / '.beads/config.yaml',
+                 xdg / 'bd/config.yaml', home / '.config/bd/config.yaml'):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        previous = path.read_bytes() if path.exists() else None
+        path.write_text('db: /wrong/workspace\n')
+        for flags in ([], ['--apply', '--reviewed']):
+            with patch.dict(os.environ, clean_env, clear=True), patch.object(switch, 'execution_allowed', return_value=True), \
+                    patch.object(switch.subprocess, 'run', side_effect=AssertionError('unexpected subprocess')), \
+                    patch.object(sys, 'argv', ['tool', '--config', str(config_file), *flags]):
+                try:
+                    switch.main()
+                except (ValueError, RuntimeError):
+                    pass
+                else:
+                    raise AssertionError('unsafe config accepted by entrypoint')
+            assert not state.exists()
+        if previous is None:
+            path.unlink()
+        else:
+            path.write_bytes(previous)
+    unreadable = home / '.config/bd/config.yaml'
+    unreadable.write_text('other: value\n')
+    read_bytes = Path.read_bytes
+    def denied(path):
+        if path == unreadable:
+            raise PermissionError('fixture denied')
+        return read_bytes(path)
+    for flags in ([], ['--apply', '--reviewed']):
+        with patch.dict(os.environ, clean_env, clear=True), patch.object(switch, 'execution_allowed', return_value=True), \
+                patch.object(Path, 'read_bytes', denied), \
+                patch.object(switch.subprocess, 'run', side_effect=AssertionError('unexpected subprocess')), \
+                patch.object(sys, 'argv', ['tool', '--config', str(config_file), *flags]):
+            try:
+                switch.main()
+            except RuntimeError:
+                pass
+            else:
+                raise AssertionError('unreadable config accepted by entrypoint')
+        assert not state.exists()
+    unreadable.unlink()
     digest = switch.config_digest()
     checkpoint = {'config_sha256': digest, 'repo': str(repo), 'port': 16021,
                   'uid': os.getuid(), 'keep': 5}
@@ -124,7 +168,7 @@ with tempfile.TemporaryDirectory(prefix='migration-entry-') as temporary:
                         assert name in str(error)
                     else:
                         raise AssertionError('selector accepted by entrypoint')
-    with patch.dict(os.environ, {}, clear=True):
+    with patch.dict(os.environ, clean_env, clear=True):
         assert switch.child_environment({'BEADS_DIR': '/wrong', 'OTHER': 'yes'}) == {'OTHER': 'yes'}
         assert switch.child_environment({'BEADS_DOLT_SERVER_PORT': '16021'}) == {'BEADS_DOLT_SERVER_PORT': '16021'}
         try:
