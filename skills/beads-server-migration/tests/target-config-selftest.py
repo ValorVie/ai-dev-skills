@@ -14,6 +14,17 @@ import target_config
 
 
 class TargetConfigTest(unittest.TestCase):
+    def test_unit_escaping(self):
+        self.assertEqual(target_config.systemd_quote('/tmp/a $b%'), '"/tmp/a $$b%%"')
+
+    def test_docker_mount_boundary(self):
+        repo = Path('/experiment/repo')
+        root = '1 0 0:1 / / rw - overlay overlay rw\n'
+        self.assertTrue(target_config.isolated_mounts(repo, root))
+        for mount in ('/experiment', '/experiment/repo', '/experiment/repo/.beads'):
+            self.assertFalse(target_config.isolated_mounts(repo, root + f'2 1 0:2 / {mount} rw - ext4 x rw\n'))
+        self.assertFalse(target_config.isolated_mounts(repo, 'broken'))
+
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
@@ -31,8 +42,9 @@ class TargetConfigTest(unittest.TestCase):
 
     def test_valid_and_invalid_config(self):
         self.assertEqual(self.write(), self.config)
-        for key, value in [('port', True), ('keep', 0), ('repo', '/tmp/../tmp'),
-                           ('database', '../bad'), ('database', 'bad-name'), ('service', 'bad/path.service')]:
+        for key, value in [('port', True), ('keep', 0), ('repo', '/tmp/../tmp'), ('repo', '/tmp/with space'),
+                           ('database', '../bad'), ('database', 'bad-name'), ('bd', '/usr/bin/true'),
+                           ('service', 'bad/path.service')]:
             old = self.config[key]
             self.config[key] = value
             with self.subTest(key=key), self.assertRaises(ValueError):
@@ -41,6 +53,9 @@ class TargetConfigTest(unittest.TestCase):
         self.config['unexpected'] = 'x'
         with self.assertRaises(ValueError):
             self.write()
+        self.path.write_text('{"hostname":"first", "hostname":"second"}')
+        with self.assertRaises(ValueError):
+            target_config.load(self.path)
 
     def test_identity_and_non_container_gate(self):
         config = self.write()

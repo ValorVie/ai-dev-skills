@@ -1,0 +1,16 @@
+[Unit]
+Description=Beads Dolt server
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=$working_directory
+ExecStart=$command
+UMask=0007
+Environment=DOLT_DISABLE_EVENT_FLUSH=1
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+
+[Install]
+WantedBy=default.target
