@@ -1,0 +1,80 @@
+#!/usr/bin/env python3.14
+"""Docker-only systemctl stand-in for the disposable local service."""
+import json
+import os
+import signal
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+if not Path('/.dockerenv').is_file() or {p.name for p in Path('/sys/class/net').iterdir()} != {'lo'}:
+    raise SystemExit('offline Docker fixture required')
+config = json.loads(Path('/experiment/target.json').read_text())
+args = sys.argv[1:]
+if len(args) < 3 or args[0] != '--user' or args[-1] != config['service']:
+    raise SystemExit(2)
+cmd = args[1]
+pidfile = Path('/experiment/service.pid')
+disabled = Path('/experiment/service.disabled')
+unit = Path('/experiment/unit.service')
+
+def active():
+    if not pidfile.is_file():
+        return False
+    pid = int(pidfile.read_text())
+    proc = Path('/proc') / str(pid)
+    if not proc.exists():
+        return False
+    if proc.stat().st_uid != os.getuid():
+        raise RuntimeError('service owner changed')
+    stat = (proc / 'stat').read_text().rsplit(')', 1)[1].split()
+    return stat[0] != 'Z'
+
+if cmd == 'show':
+    prop = args[2]
+    if prop == '--property=FragmentPath':
+        print(unit)
+    elif prop == '--property=MainPID':
+        print(pidfile.read_text().strip() if active() else '0')
+    elif prop == '--property=ActiveState':
+        print('active' if active() else 'inactive')
+    else:
+        raise SystemExit(2)
+elif cmd == 'is-active':
+    running = active()
+    if '--quiet' not in args:
+        print('active' if running else 'inactive')
+    raise SystemExit(0 if running else 3)
+elif cmd == 'is-enabled':
+    enabled = not disabled.exists()
+    print('enabled' if enabled else 'disabled')
+    raise SystemExit(0 if enabled else 1)
+elif cmd == 'enable':
+    disabled.unlink(missing_ok=True)
+elif cmd == 'disable':
+    disabled.touch()
+elif cmd == 'start':
+    if pidfile.exists():
+        raise SystemExit(1)
+    log = open('/experiment/service.log', 'ab')
+    env = os.environ.copy()
+    env['DOLT_ROOT_PATH'] = '/experiment/dolt-root'
+    proc = subprocess.Popen([config['dolt'], 'sql-server', '--host', '127.0.0.1', '--port',
+                             str(config['port']), '--data-dir', config['repo'] + '/.beads/dolt'],
+                            stdout=log, stderr=log, start_new_session=True, env=env, umask=0o007)
+    pidfile.write_text(str(proc.pid))
+elif cmd == 'stop':
+    if not active():
+        raise SystemExit(1)
+    pid = int(pidfile.read_text())
+    os.kill(pid, signal.SIGTERM)
+    for _ in range(100):
+        if not active():
+            break
+        time.sleep(0.1)
+    else:
+        raise RuntimeError('service did not stop')
+    pidfile.unlink()
+else:
+    raise SystemExit(2)
