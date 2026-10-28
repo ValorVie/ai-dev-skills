@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- 新增 `beads-server-migration`，提供 Beads 伺服器模式切換與退回流程；skill collection 更新為 20 個 skills。
 - `custom-skills-doc-updater` 改寫成「範圍 → 變更類型與要看的文件 → 更新方式 → 完成檢查」：未指定範圍時直接分析最近 1 個 commit，不再跳出選單；移除逐步驟的中間報告範本，以及已不存在的 `sources/`、`.standards/`、`agents/claude/README.md`、`commands/claude/README.md` 路徑。
 - `custom-skill-creator` 的輸出格式範例改用一般語氣（不再示範全大寫 ALWAYS），benchmark schema 範例的模型 ID 改為佔位字串。
 - `custom-skills-ecc-analyze` 移除已退役的 `uds` 與寫死的 skill 數量。
