@@ -455,11 +455,11 @@ def main():
             scratch.mkdir()
             run(['git', 'init', '-q', str(scratch)])
             run(['git', 'init', '-q', '--bare', str(work / 'remote.git')])
-            if source_config.read_bytes() != config_bytes:
+            if source_config.is_symlink() or not source_config.is_file() or source_config.read_bytes() != config_bytes:
                 raise RuntimeError('config.yaml 已變動；請重新預覽')
             run(['cp', '-R', '--preserve=timestamps', str(beads), str(scratch / '.beads')])
             scratch_config = scratch / '.beads/config.yaml'
-            if scratch_config.read_bytes() != config_bytes:
+            if scratch_config.is_symlink() or not scratch_config.is_file() or scratch_config.read_bytes() != config_bytes:
                 raise RuntimeError('複製的 config.yaml 與預覽不符')
             scratch_config.write_text(isolate_sync_remote(config_bytes.decode('utf-8'),
                                                          (work / 'remote.git').as_uri()), encoding='utf-8')
