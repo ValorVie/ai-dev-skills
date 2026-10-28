@@ -37,6 +37,7 @@ with tempfile.TemporaryDirectory(prefix='migration-entry-') as temporary:
     metadata = repo / '.beads' / 'metadata.json'
     metadata.write_text(json.dumps({'dolt_mode': 'embedded', 'dolt_database': 'sample_db',
                                     'project_id': 'fixture-project'}))
+    (repo / '.beads/config.yaml').write_text('# fixture\n')
     for name in ('bd', 'dolt'):
         executable = root / name
         executable.write_text('#!/bin/sh\nexit 0\n')
@@ -49,6 +50,21 @@ with tempfile.TemporaryDirectory(prefix='migration-entry-') as temporary:
     config_file = root / 'target.json'
     config_file.write_text(json.dumps(config))
     switch.configure(config_file)
+    config_yaml = repo / '.beads/config.yaml'
+    for invalid in ('sync.remote: a\nsync.remote: b\n', 'sync:\n  remote: old\n'):
+        config_yaml.write_text(invalid)
+        for flags in ([], ['--apply', '--reviewed']):
+            with patch.dict(os.environ, {}, clear=True), patch.object(switch, 'execution_allowed', return_value=True), \
+                    patch.object(switch.state_retention, 'inspectable', return_value=True), \
+                    patch.object(sys, 'argv', ['tool', '--config', str(config_file), *flags]):
+                try:
+                    switch.main()
+                except ValueError as error:
+                    assert 'config.yaml' in str(error)
+                else:
+                    raise AssertionError('unsafe config accepted by entrypoint')
+            assert config_yaml.read_text() == invalid and not state.exists()
+    config_yaml.write_text('# fixture\n')
     digest = switch.config_digest()
     checkpoint = {'config_sha256': digest, 'repo': str(repo), 'port': 16021,
                   'uid': os.getuid(), 'keep': 5}

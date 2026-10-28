@@ -60,7 +60,53 @@ BD_SELECTOR_ENV = (
     'BD_DOLT_SERVER_HOST', 'BD_DOLT_SERVER_PORT', 'BD_DOLT_SERVER_SOCKET', 'BD_DOLT_SOCKET',
     'BD_DOLT_PROXIED_SERVER', 'BEADS_DOLT_AUTO_START', 'BEADS_DOLT_CREDENTIAL_COMMAND',
     'BEADS_PRODUCTION_PORT', 'BEADS_SKIP_IDENTITY_CHECK', 'BEADS_TEST_MODE', 'BEADS_TEST_SERVER',
+    'BD_SYNC_REMOTE', 'BD_SYNC_GIT_REMOTE',
 )
+
+
+def isolate_sync_remote(text, remote):
+    """Accept only simple YAML mappings so an alternate sync key cannot hide."""
+    message = 'config.yaml 格式不支援；請整理為簡單鍵值設定，移除頂層 sync 區塊並保留至多一行 sync.remote'
+    lines = text.splitlines(keepends=True)
+    keys = {}
+    stack = []
+    remote_line = None
+    for index, line in enumerate(lines):
+        if not line.strip() or line.lstrip().startswith('#'):
+            continue
+        match = re.fullmatch(r'( *)([A-Za-z0-9_.-]+):(?:[ ]+(.*?))?[ ]*\r?\n?', line)
+        if not match:
+            raise ValueError(message)
+        indent, key, value = len(match[1]), match[2].lower(), match[3] or ''
+        while stack and stack[-1][0] >= indent:
+            stack.pop()
+        if indent and (not stack or not stack[-1][2]):
+            raise ValueError(message)
+        if not indent and key == 'sync':
+            raise ValueError(message)
+        path = tuple(item[1] for item in stack) + (key,)
+        if path in keys:
+            raise ValueError(message)
+        keys[path] = True
+        # Restrict values to single-line scalars; reject aliases, flow collections,
+        # block strings and quoted keys instead of guessing their YAML meaning.
+        value = re.split(r'\s+#', value, maxsplit=1)[0].strip()
+        if value and not (re.fullmatch(r'"(?:[^"\\]|\\["\\/bfnrt]|\\u[0-9a-fA-F]{4})*"', value)
+                          or re.fullmatch(r"'(?:[^']|'')*'", value)
+                          or (not re.search(r"[\[\]{}'\"&*!|>%@`]|:\s", value)
+                              and not value.startswith(('-', '?', ':', '#')))):
+            raise ValueError(message)
+        stack.append((indent, key, not value))
+        if not indent and key == 'sync.remote':
+            remote_line = index
+    replacement = 'sync.remote: ' + json.dumps(remote) + '\n'
+    if remote_line is None:
+        if text and not text.endswith('\n'):
+            lines.append('\n')
+        lines.append(replacement)
+    else:
+        lines[remote_line] = replacement
+    return ''.join(lines)
 
 
 def reject_selector_environment():
@@ -339,6 +385,11 @@ def main():
         return 0
     if config.get('dolt_mode') != 'embedded':
         raise ValueError('目標不是設定的 embedded 資料庫')
+    source_config = beads / 'config.yaml'
+    if source_config.is_symlink() or not source_config.is_file():
+        raise ValueError('config.yaml 不可讀或不是一般檔案；請整理設定後重試')
+    config_bytes = source_config.read_bytes()
+    isolate_sync_remote(config_bytes.decode('utf-8'), 'file:///local-placeholder')
     print(f'目標={repo} 狀態={state} uid={os.getuid()} port={args.port}')
     print('預覽：備份、啟動本機服務、保留內嵌樹、切換並讀回；失敗以 rollback.py 退回')
     if not args.apply:
@@ -404,13 +455,14 @@ def main():
             scratch.mkdir()
             run(['git', 'init', '-q', str(scratch)])
             run(['git', 'init', '-q', '--bare', str(work / 'remote.git')])
+            if source_config.read_bytes() != config_bytes:
+                raise RuntimeError('config.yaml 已變動；請重新預覽')
             run(['cp', '-R', '--preserve=timestamps', str(beads), str(scratch / '.beads')])
             scratch_config = scratch / '.beads/config.yaml'
-            text = scratch_config.read_text(encoding='utf-8')
-            text, count = re.subn(r'^sync\.remote:.*$', 'sync.remote: file://' + str(work / 'remote.git'), text, flags=re.M)
-            if count != 1:
-                raise ValueError('測試備份副本的 sync.remote 格式不符')
-            scratch_config.write_text(text, encoding='utf-8')
+            if scratch_config.read_bytes() != config_bytes:
+                raise RuntimeError('複製的 config.yaml 與預覽不符')
+            scratch_config.write_text(isolate_sync_remote(config_bytes.decode('utf-8'),
+                                                         (work / 'remote.git').as_uri()), encoding='utf-8')
             helper('snapshot.py', ['--bd', CONFIG['bd'], '--out', work / 'copy.json',
                                    '--expected', work / 'embedded.json'], scratch, env)
             run(['bd', '--sandbox', '--dolt-auto-commit', 'off', 'dolt', 'commit'], scratch, env)

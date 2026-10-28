@@ -73,15 +73,8 @@ else:
     user(['bd', 'comments', 'add', issue, 'fixture comment'])
     user(['bd', 'label', 'add', issue, 'fixture-label'])
 beads = repo / '.beads'
-config_file = beads / 'config.yaml'
-contents = config_file.read_text()
-replacement = 'sync.remote: file:///experiment/remote.git'
-contents, count = re.subn(r'^sync\.remote:.*$', replacement, contents, flags=re.M)
-if count == 0:
-    contents += '\n' + replacement + '\n'
-elif count != 1:
-    raise SystemExit('multiple sync remotes')
-config_file.write_text(contents)
+if args.kind == 'fresh' and re.search(r'^sync\.remote\s*:', (beads / 'config.yaml').read_text(), re.M):
+    raise SystemExit('fresh fixture unexpectedly contains sync.remote')
 subprocess.run(['setfacl', '-R', '-b', '--', str(beads)], check=True)
 for directory, dirs, files in os.walk(beads, followlinks=False):
     for path in [Path(directory), *(Path(directory) / n for n in dirs + files)]:
