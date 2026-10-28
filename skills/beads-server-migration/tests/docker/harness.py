@@ -62,7 +62,8 @@ for kind, uid, gid, other, port, database, service in cases:
                         '--port', str(port), '--database', database, '--service', service],
                        check=True, stdout=output, stderr=subprocess.STDOUT, timeout=1200)
     for who, script in ((uid, 'non-dumpable.py'), (other, 'other-idle.py')):
-        subprocess.run(['docker', 'exec', '-d', '-u', f'{who}:{gid}', '-e', 'HOME=/experiment/home', name,
+        subprocess.run(['docker', 'exec', '-d', '-u', f'{who}:{gid}', '-e', 'HOME=/experiment/home',
+                        '-e', f'UV_CACHE_DIR=/experiment/uv-cache-{who}', name,
                         'uv', 'run', '--offline', '--python', '3.14', '--no-project', 'python', '-I', '-B',
                         '/skill/tests/docker/' + script], check=True)
     with (logs / (kind + '-cycle.log')).open('x') as output:
