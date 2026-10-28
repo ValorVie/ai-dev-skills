@@ -15,6 +15,6 @@ description: 將單一 repo 的 Beads 從 embedded Dolt 遷移到本機 Dolt 伺
 2. 根據 [target.example.json](assets/target.example.json) 建立該 repo 的設定檔；主機、帳號、真實路徑、資料庫、服務、群組和執行檔由操作者填入。不要修改既有目標的權限來通過檢查。
 3. 下載並核對官方 digest 後安裝 Dolt，再預覽並核對沒有遺漏任何 `bd`、Git hook 或背景程序。以不覆蓋方式安裝 unit。
 4. 取得資料庫異動和服務操作所需授權後，依手冊以 `--apply --reviewed` 切換。保存操作紀錄，逐項驗收後才恢復使用。
-5. 不一致或中斷時停止其他程序，依寫入狀態選擇立即退回或事後退回。資料、鎖與備份保留；檢查點或設定漂移時停止。
+5. 不一致或中斷時停止其他程序，依寫入狀態選擇立即退回或事後退回。資料、鎖與備份保留；檢查點不符時停止。
 
 腳本及 systemd 範本只隨技能提供，不會自行安裝或啟動服務。Docker 測試中的 systemctl 替身不等於真實 systemd 驗收。
