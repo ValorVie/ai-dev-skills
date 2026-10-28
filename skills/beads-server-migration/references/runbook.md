@@ -1,6 +1,6 @@
 # Beads 伺服器模式操作手冊
 
-本手冊處理單一 Linux repo：先預覽，再把 embedded Dolt 移至本機 systemd user service；失敗時依資料是否變動退回。所有命令都在設定檔指定的**目標主機**，以指定的**執行帳號**執行。不要用 root 代替該帳號，也不要把容器測試當成真實 systemd 驗收。
+本手冊處理單一 Linux repo：先準備 Dolt 並預覽，再把 embedded Dolt 移至本機 systemd user service；失敗時依資料是否變動退回。所有命令都在設定檔指定的**目標主機**，以指定的**執行帳號**執行。不要用 root 代替該帳號，也不要把容器測試當成真實 systemd 驗收。
 
 ## 操作前
 
@@ -21,14 +21,6 @@ PY=(uv run --offline --python 3.14 --no-project python -I -B)
 讀回 hostname、帳號、repo 真實路徑、群組、資料庫、服務名稱及通訊埠，與設定檔逐項比對。確認 repo 的 `.beads.gate.lock` 已存在且能由執行帳號開啟；不得刪除或重建 gate 檔。目標 `.beads/.env` 或 `.beads/redirect`、選庫環境變數存在時先查明並排除。工具會拒絕已設定的選庫變數，包括空值，不顯示其值。
 
 切換前整理 `.beads/config.yaml`：只使用簡單的單行純量與巢狀鍵值；頂層不可有 `sync:`，平鋪 `sync.remote:` 至多一行。工具無法判讀的格式及重複鍵會停止，請先整理並重新預覽。不得設定 `BD_SYNC_REMOTE` 或 `BD_SYNC_GIT_REMOTE`，避免環境變數覆寫暫存副本的本機遠端；工具不會修改來源設定。
-
-在目標主機、以執行帳號預覽；預覽不代表所有套用前置檢查已通過：
-
-```bash
-"${PY[@]}" "$SKILL_ROOT/scripts/switch.py" --config "$TARGET_CONFIG"
-```
-
-「退回程序可見性」未通過、目標不符、工具缺失或任何檢查不明時停止。預覽不啟動 `bd`；若目標已在 server 模式，還會讀取服務程序資訊。
 
 ## Dolt 下載與安裝
 
@@ -63,6 +55,16 @@ rm -- "$CANDIDATE"
 ```
 
 保留下載檔、官方回應、digest 與版本紀錄至驗收完成。失敗時不要覆蓋目的地。清理暫存前先確認其確切路徑與沒有需要保留的證據。回復新安裝須先停用依賴此 Dolt 的服務，再依授權移除該新檔；替換既有檔要另定備份與回復方案。
+
+## 第一次預覽
+
+確認設定檔指定的 `bd` 與 Dolt 都已可執行。在目標主機、以執行帳號預覽；預覽不代表所有套用前置檢查已通過：
+
+```bash
+"${PY[@]}" "$SKILL_ROOT/scripts/switch.py" --config "$TARGET_CONFIG"
+```
+
+「退回程序可見性」未通過、目標不符、工具缺失或任何檢查不明時停止。預覽不啟動 `bd`；若目標已在 server 模式，還會讀取服務程序資訊。
 
 ## 建立狀態目錄與 user service
 
