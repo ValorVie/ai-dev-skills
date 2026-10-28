@@ -5,7 +5,7 @@
   "state": "/srv/example/migration-state",
   "port": 16421,
   "database": "example_db",
-  "prefix": "example",
+  "prefix": "example_db",
   "service": "example-beads.service",
   "group": "example-team",
   "keep": 5,

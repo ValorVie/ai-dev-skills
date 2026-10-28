@@ -33,7 +33,7 @@ with tempfile.TemporaryDirectory(prefix='migration-entry-') as temporary:
         executable.chmod(0o755)
     config = {'hostname': socket.gethostname().split('.')[0],
               'account': pwd.getpwuid(os.getuid()).pw_name, 'repo': str(repo), 'state': str(state),
-              'port': 16021, 'database': 'sample_db', 'prefix': 'sample', 'service': 'sample.service',
+              'port': 16021, 'database': 'sample_db', 'prefix': 'sample_db', 'service': 'sample.service',
               'group': grp.getgrgid(os.getgid()).gr_name, 'keep': 5, 'bd': str(root / 'bd'),
               'dolt': str(root / 'dolt'), 'docker_fixture': False}
     config_file = root / 'target.json'
@@ -50,7 +50,7 @@ with tempfile.TemporaryDirectory(prefix='migration-entry-') as temporary:
             pass
         else:
             raise AssertionError('changed checkpoint accepted: ' + field)
-    for field, value in (('port', 16022), ('database', 'other'), ('service', 'other.service'),
+    for field, value in (('port', 16022), ('service', 'other.service'),
                          ('state', str(root / 'other')), ('keep', 6)):
         changed = dict(config, **{field: value})
         config_file.write_text(json.dumps(changed))
@@ -61,6 +61,14 @@ with tempfile.TemporaryDirectory(prefix='migration-entry-') as temporary:
             pass
         else:
             raise AssertionError('changed configuration accepted: ' + field)
+    config_file.write_text(json.dumps(dict(config, database='other', prefix='other')))
+    switch.configure(config_file)
+    try:
+        switch.check_target_config(checkpoint)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError('changed database configuration accepted')
     config_file.write_text(json.dumps(config))
     switch.configure(config_file)
     for name in switch.BD_SELECTOR_ENV:

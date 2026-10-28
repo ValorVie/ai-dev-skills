@@ -83,6 +83,8 @@ def load(path):
         raise ValueError('資料庫名稱不符')
     if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_-]*', data['prefix']):
         raise ValueError('前綴不符')
+    if data['prefix'] != data['database']:
+        raise ValueError('暫存初始化前綴必須與資料庫名稱一致')
     if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.@-]*\.service', data['service']):
         raise ValueError('服務名稱不符')
     return data

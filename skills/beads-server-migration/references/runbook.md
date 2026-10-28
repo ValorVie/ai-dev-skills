@@ -8,7 +8,7 @@
 
 準備 Python 3.14、`uv`、`bd`、Dolt、Git、`getfacl`、`setfacl`、`fuser` 或 `lsof`、`systemctl`、`curl`、`tar`。來源測試使用 bd 1.3.1、Dolt 2.6.x；其他版本先在隔離副本驗證。目標 `.beads` 和原內嵌根目錄須由執行帳號擁有、屬於設定的群組、模式 `2770`，且具有 default ACL（新檔繼承的權限）；保留所有既有檔的 owner、group、mode 和 ACL。若現場不同，停止並另定安全方案，不以 chmod／chown／setfacl 修改目標 `.beads` 硬闖。狀態目錄須與 `.beads` 同一檔案系統，且位於 `.beads` 和 `.cache` 之外。檢查磁碟可用空間；切換預檢要求資料大小三倍另加 1 GiB，事後退回另做空間檢查。
 
-以目標主機的執行帳號，複製 [設定範例](../assets/target.example.json) 到私人工作位置並填好所有欄位。路徑必須是解析後的絕對路徑；systemd 工作目錄的 repo 路徑不可包含空白。`bd` 和 `dolt` 為可執行的實際檔案，名稱須分別為 `bd`／`dolt` 或其後接 `-` 的名稱，讓程序檢查可辨識。`docker_fixture` 對正式目標一律為 `false`。此檔不可在作業中改動；三個操作入口將設定雜湊與目標資訊綁到檢查點，退回與續跑必須用相同設定。
+以目標主機的執行帳號，複製 [設定範例](../assets/target.example.json) 到私人工作位置並填好所有欄位。路徑必須是解析後的絕對路徑；systemd 工作目錄的 repo 路徑不可包含空白。`prefix` 是暫存 repo 初始化使用的前綴，須與 `database` 相同，確保初始化選到設定的資料庫；它不改寫目標既有 issue ID。`bd` 和 `dolt` 為可執行的實際檔案，名稱須分別為 `bd`／`dolt` 或其後接 `-` 的名稱，讓程序檢查可辨識。`docker_fixture` 對正式目標一律為 `false`。此檔不可在作業中改動；三個操作入口將設定雜湊與目標資訊綁到檢查點，退回與續跑必須用相同設定。
 
 在目標主機、以執行帳號的 Bash 設定下列變數，實際路徑自行替換；每個後續程式都在同一個 shell 使用：
 

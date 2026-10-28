@@ -31,7 +31,7 @@ class TargetConfigTest(unittest.TestCase):
         root = Path(self.tmp.name).resolve()
         self.config = {'hostname': 'test-host', 'account': 'operator', 'repo': str(root),
                        'state': str(root / 'state'), 'port': 16021, 'database': 'sample_db',
-                       'prefix': 'sample', 'service': 'sample.service', 'group': 'team',
+                       'prefix': 'sample_db', 'service': 'sample.service', 'group': 'team',
                        'keep': 5, 'bd': '/usr/bin/bd', 'dolt': '/usr/bin/dolt',
                        'docker_fixture': False}
         self.path = root / 'target.json'
@@ -43,7 +43,7 @@ class TargetConfigTest(unittest.TestCase):
     def test_valid_and_invalid_config(self):
         self.assertEqual(self.write(), self.config)
         for key, value in [('port', True), ('keep', 0), ('repo', '/tmp/../tmp'), ('repo', '/tmp/with space'),
-                           ('database', '../bad'), ('database', 'bad-name'), ('bd', '/usr/bin/true'),
+                           ('database', '../bad'), ('database', 'bad-name'), ('prefix', 'other'), ('bd', '/usr/bin/true'),
                            ('service', 'bad/path.service')]:
             old = self.config[key]
             self.config[key] = value
