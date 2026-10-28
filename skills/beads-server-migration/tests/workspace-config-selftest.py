@@ -153,11 +153,13 @@ with tempfile.TemporaryDirectory(prefix='migration-config-') as temporary:
             seen.append((args, kwargs['env']))
             return SimpleNamespace(returncode=0, stdout='', stderr='')
         with patch.object(switch.subprocess, 'run', fake_run):
-            switch.run(['bd', 'list'], beads.parent, dict(os.environ))
-            switch.helper('snapshot.py', ['--bd', 'bd', '--out', root / 'out'], beads.parent, dict(os.environ))
+            switch.run(['bd', 'list'], beads.parent, dict(os.environ, OTEL_SDK_DISABLED='false'))
+            switch.helper('snapshot.py', ['--bd', 'bd', '--out', root / 'out'], beads.parent,
+                          dict(os.environ, OTEL_SDK_DISABLED='false'))
         assert len(seen) == 2 and all(env['BEADS_DIR'] == str(beads.resolve()) for _, env in seen)
         assert all(env['BD_ROUTING_MODE'] == 'explicit' and env['BD_ROUTING_DEFAULT'] == '.' for _, env in seen)
         assert all(env['BD_EXPORT_AUTO'] == 'false' for _, env in seen)
+        assert all(env['OTEL_SDK_DISABLED'] == 'true' for _, env in seen)
         assert seen[0][0][0] == '/fixture/bd' and 'snapshot.py' in seen[1][0][1]
         location = {'path': str(beads), 'database_path': str(beads / 'embeddeddolt')}
         with patch.object(switch, 'run', return_value=json.dumps(location)):
@@ -172,7 +174,8 @@ with tempfile.TemporaryDirectory(prefix='migration-config-') as temporary:
                 else:
                     raise AssertionError('wrong readback accepted: ' + key)
     for variable in ('BD_DOLT_AUTO_PUSH', 'BD_ROUTING_DEFAULT', 'BEADS_ROUTING_MODE',
-                     'BD_BACKUP_GIT_REPO', 'BD_CONTRIBUTOR_PLANNING_REPO'):
+                     'BD_BACKUP_GIT_REPO', 'BD_CONTRIBUTOR_PLANNING_REPO', 'BD_OTEL_ENABLED',
+                     'BD_OTEL_METRICS_URL'):
         with patch.dict(os.environ, {variable: ''}, clear=True):
             try:
                 switch.reject_selector_environment()
@@ -181,7 +184,7 @@ with tempfile.TemporaryDirectory(prefix='migration-config-') as temporary:
             else:
                 raise AssertionError('unsafe environment accepted: ' + variable)
     for variable in ('BD_EXTERNAL_PROJECTS', 'BD_FEDERATION_REMOTE', 'BD_REPOS_PRIMARY',
-                     'BD_NO_GIT_OPS', 'BD_METRICS_ENDPOINT', 'BD_DOLT_MAX_CONNS'):
+                     'BD_NO_GIT_OPS', 'BD_METRICS_ENDPOINT', 'BD_DOLT_MAX_CONNS', 'BD_OTEL_STDOUT'):
         with patch.dict(os.environ, {variable: 'fixture'}, clear=True):
             switch.reject_selector_environment()
 print('workspace config selftest passed')

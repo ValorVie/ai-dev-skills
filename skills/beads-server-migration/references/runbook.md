@@ -24,7 +24,7 @@ PY=(uv run --offline --python 3.14 --no-project python -I -B)
 
 專案與使用者設定不得含 `db`、`no-db`、`backup.enabled`、`backup.git-repo`，以及 `routing.mode`、`routing.default`、`routing.maintainer`、`routing.contributor`、`contributor.auto_route`、`contributor.planning_repo`。專案的 `sync.remote` 可有一行非空的平鋪鍵；頂層 `sync:` 不支援。使用者設定的 `sync.remote`、`no-git-ops`、`federation`、`repos` 及其他非上述設定可保留，但格式仍須通過檢查。工具檢查 `$HOME/.beads/config.yaml`、`$HOME/.config/bd/config.yaml` 及 `${XDG_CONFIG_HOME:-$HOME/.config}/bd/config.yaml`；使用者設定存在卻讀不到或格式無法判讀時停止，請先確認權限及整理成簡單鍵值。逐鍵盤點及原碼位置見 [config-keys.md](config-keys.md)。
 
-工具以 `BEADS_DIR` 綁定每個 `bd` 子程序，並固定 `BD_ROUTING_MODE=explicit`、`BD_ROUTING_DEFAULT=.`，避免資料庫內路由把讀取導向其他 repo。操作者不得自行設定選庫、受限路由或 Dolt 環境變數。工具執行時暫時關閉自動匯出，初始化時固定本機遠端，均不改寫操作者設定。暫存副本提交前另用 `bd where --json` 核對工作區及資料庫路徑；此讀回不能單獨證明儲存模式。工具在身分已核對的 scratch 將 `sync.remote` 改為本機遠端，不修改來源設定。
+工具以 `BEADS_DIR` 綁定每個 `bd` 子程序，並固定 `BD_ROUTING_MODE=explicit`、`BD_ROUTING_DEFAULT=.`，避免資料庫內路由把讀取導向其他 repo。操作者不得自行設定選庫、受限路由、Dolt、`BD_OTEL_ENABLED` 或 `BD_OTEL_METRICS_URL` 環境變數。工具執行時暫時關閉自動匯出與遙測，初始化時固定本機遠端，均不改寫操作者設定。暫存副本提交前另用 `bd where --json` 核對工作區及資料庫路徑；此讀回不能單獨證明儲存模式。工具在身分已核對的 scratch 將 `sync.remote` 改為本機遠端，不修改來源設定。
 
 切換前與切換後，資料庫都必須只有一個 `main` 分支。切換前以已授權且不修改資料的方式確認；工具的第一次預覽不檢查分支。若有其他分支或無法確認，停止並保留資料，另訂保留完整資料的回復方案，不刪分支、不放寬指紋檢查。
 

@@ -64,6 +64,7 @@ BD_SELECTOR_ENV = (
     'BD_NO_DB', 'BEADS_NO_DB',
     'BD_DATABASE', 'BEADS_DATABASE', 'BEADS_BACKEND', 'BEADS_DATABASE_BACKEND',
     'BD_BACKUP_ENABLED', 'BEADS_BACKUP_ENABLED', 'BD_BACKUP_GIT_REPO', 'BEADS_BACKUP_GIT_REPO',
+    'BD_OTEL_ENABLED', 'BD_OTEL_METRICS_URL',
     *(prefix + key for prefix in ('BD_', 'BEADS_') for key in
       ('ROUTING_MODE', 'ROUTING_DEFAULT', 'ROUTING_MAINTAINER', 'ROUTING_CONTRIBUTOR',
        'CONTRIBUTOR_AUTO_ROUTE', 'CONTRIBUTOR_PLANNING_REPO')),
@@ -280,6 +281,7 @@ def run(args, cwd=None, env=None):
     env['DOLT_METRICS_DISABLED'] = '1'
     env['BD_DISABLE_METRICS'] = '1'
     env['BD_DISABLE_EVENT_FLUSH'] = '1'
+    env['OTEL_SDK_DISABLED'] = 'true'
     proc = subprocess.run(args, cwd=cwd, env=env, capture_output=True, text=True, timeout=600)
     log_event('結束 ' + Path(args[0]).name + ' exit=' + str(proc.returncode))
     if proc.returncode:
@@ -379,6 +381,7 @@ def helper(name, args, cwd, env=None):
     env['DOLT_METRICS_DISABLED'] = '1'
     env['BD_DISABLE_METRICS'] = '1'
     env['BD_DISABLE_EVENT_FLUSH'] = '1'
+    env['OTEL_SDK_DISABLED'] = 'true'
     args = list(args)
     if name == 'permissions.py' and '--group' not in args:
         args += ['--group', target_config.group_id(CONFIG)]
