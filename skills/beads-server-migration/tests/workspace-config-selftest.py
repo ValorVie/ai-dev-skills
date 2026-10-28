@@ -134,6 +134,18 @@ with tempfile.TemporaryDirectory(prefix='migration-config-') as temporary:
                 raise AssertionError('init accepted an unrelated workspace')
         assert len(seen) == 1 and seen[0]['BD_SYNC_REMOTE'] == (work / 'remote.git').as_uri()
         assert seen[0]['BD_EXPORT_AUTO'] == 'false' and seen[0]['BEADS_DIR'] == str(stage / '.beads')
+        (stage / '.beads').mkdir()
+        generated = stage / '.beads/config.yaml'
+        generated.write_text('# bd init\n\nsync:\n    remote: ' + json.dumps((work / 'remote.git').as_uri()) + '\n')
+        switch.normalize_init_remote(stage, (work / 'remote.git').as_uri())
+        assert generated.read_text() == '# bd init\n\nsync.remote: ' + json.dumps((work / 'remote.git').as_uri()) + '\n'
+        generated.write_text('sync:\n    remote: "file:///other"\n')
+        try:
+            switch.normalize_init_remote(stage, (work / 'remote.git').as_uri())
+        except ValueError:
+            pass
+        else:
+            raise AssertionError('unexpected init remote accepted')
         (beads / 'metadata.json').write_text(json.dumps({'dolt_mode': 'embedded', 'dolt_database': 'sample'}))
         switch.CONFIG = {'bd': '/fixture/bd', 'dolt': '/fixture/dolt', 'database': 'sample'}
         seen = []

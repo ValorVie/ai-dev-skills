@@ -2,7 +2,7 @@
 
 此表根據 Beads 1.3.1 原碼 commit `c1c4b642ac1c08d8c828007a1c2f96e47e43ef7c` 的 `cmd/bd/` 與 `internal/` 非測試 Go 檔，列出具名的設定讀取、預設值、YAML 登記及其原碼位置。`file:line` 均相對該原始碼根目錄；不同版本須重新盤點。資料庫設定與 YAML 設定不是同一來源；此表的「資料庫」是資料庫內的鍵，不能只用檔案檢查聲稱已拒絕。
 
-「接受」只表示此鍵不因名稱被拒，格式仍須通過簡單鍵值解析。專案的平鋪 `sync.remote` 至多一行且非空；頂層 `sync:` 不支援。使用者設定可有遠端：Beads 合併順序見 `internal/config/config.go:70-103,157-203,357-368`，專案優先；`cmd/bd/sync_remote.go:15-24` 先讀 `sync.remote` 再讀舊鍵。工具在暫存副本中改成本機遠端，並核對 scratch 設定；來源不改。初始化尚無專案設定時，以子程序專用 `BD_SYNC_REMOTE` 指向工具建立的本機遠端，避免 `bd init` 在 `cmd/bd/init.go:1198-1233` 探測使用者遠端。
+「接受」只表示此鍵不因名稱被拒，格式仍須通過簡單鍵值解析。專案的平鋪 `sync.remote` 至多一行且非空；頂層 `sync:` 不支援。使用者設定可有遠端：Beads 合併順序見 `internal/config/config.go:70-103,157-203,357-368`，專案優先；`cmd/bd/sync_remote.go:15-24` 先讀 `sync.remote` 再讀舊鍵。工具在暫存副本中改成本機遠端，並核對 scratch 設定；來源不改。初始化尚無專案設定時，以子程序專用 `BD_SYNC_REMOTE` 指向工具建立的本機遠端，避免 `bd init` 在 `cmd/bd/init.go:1198-1233` 探測使用者遠端。Beads 會把該遠端寫成巢狀形式（`cmd/bd/init.go:1765-1773,3384-3394`）；工具只在核對值相符後，將自己新建的 stage 設定改為平鋪，否則停止。
 
 工具執行 `bd --readonly list/show/comments/dep list`、`bd where`、`bd --sandbox dolt commit`、`bd --sandbox backup init/sync`、`bd init --server --external --non-interactive` 及 `bd backup restore`；退回另用相同的 commit、backup 與快照命令。工具固定 `BD_EXPORT_AUTO=false`，因寫入命令後 `cmd/bd/main.go:2031-2102` 可能自動匯出，而 `cmd/bd/export_auto.go:99-124,205-216,266-270` 會依 `export.path` 寫檔及 stage；只影響工具子程序，不改操作者設定。工具亦關閉遙測（`cmd/bd/main.go:1034-1048,2430-2446`）。
 

@@ -294,6 +294,17 @@ def verify_scratch_location(scratch, env):
         raise RuntimeError('bd 讀回的工作區或資料庫路徑與暫存副本不符；停止')
 
 
+def normalize_init_remote(stage, remote):
+    path = stage / '.beads/config.yaml'
+    if path.is_symlink() or not path.is_file():
+        raise ValueError('初始化設定檔不可用')
+    text = path.read_text(encoding='utf-8')
+    block = '\nsync:\n    remote: ' + json.dumps(remote) + '\n'
+    if text.count(block) != 1:
+        raise ValueError('初始化產生的遠端設定不符')
+    path.write_text(isolate_sync_remote(text.replace(block, '\n', 1), remote, guard=True), encoding='utf-8')
+
+
 def no_bd():
     for path in Path('/proc').glob('[0-9]*/comm'):
         try:
@@ -591,6 +602,7 @@ def main():
             run(['git', 'init', '-q', str(stage)])
             env['BEADS_DOLT_SERVER_PORT'] = str(args.port)
             run(['bd', 'init', '--server', '--external', '--server-host', '127.0.0.1', '--server-port', str(args.port), '--prefix', CONFIG['prefix'], '--skip-agents', '--skip-hooks', '--non-interactive'], stage, env)
+            normalize_init_remote(stage, (work / 'remote.git').as_uri())
             run(['bd', 'backup', 'restore', '--force', str(backup)], stage, env)
             helper('snapshot.py', ['--bd', CONFIG['bd'], '--out', work / 'stage.json', '--expected', work / 'embedded.json'], stage, env)
             helper('db-fingerprint.py', ['--database', CONFIG['database'], '--port', args.port, '--out', work / 'fingerprint-before.json'], stage, env)
