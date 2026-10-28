@@ -150,7 +150,8 @@ def run(args, cwd=None, env=None):
 def no_bd():
     for path in Path('/proc').glob('[0-9]*/comm'):
         try:
-            if path.read_text().strip() == 'bd':
+            name = path.read_text().strip()
+            if name == 'bd' or name.startswith('bd-'):
                 raise RuntimeError(f"仍有 bd 程序：{path.parent.name}")
         except FileNotFoundError:
             continue

@@ -22,6 +22,16 @@ spec.loader.exec_module(reswitch)
 
 with tempfile.TemporaryDirectory(prefix='migration-entry-') as temporary:
     root = Path(temporary).resolve()
+    proc_comm = root / 'comm'
+    for name, should_block in (('bd', True), ('bd-1.3', True), ('python', False)):
+        proc_comm.write_text(name + '\n')
+        with patch.object(Path, 'glob', return_value=[proc_comm]):
+            try:
+                switch.no_bd()
+            except RuntimeError:
+                assert should_block, name
+            else:
+                assert not should_block, 'active process was not rejected: ' + name
     repo, state = root / 'repo', root / 'state'
     (repo / '.beads').mkdir(parents=True)
     metadata = repo / '.beads' / 'metadata.json'
