@@ -115,7 +115,9 @@ for directory, dirs, files in os.walk(beads, followlinks=False):
     subprocess.run(['setfacl', '-m', f'd:u::rwx,d:g::rwx,d:g:{args.gid}:rwx,d:m::rwx,d:o::---', '--', directory], check=True)
     os.chmod(directory, 0o2770)
 manifest = beads / 'embeddeddolt' / args.database / '.dolt/noms/manifest'
-for path in (manifest, beads / 'export-state.json'):
+# SQL fixture creates a stats repository; Dolt restores its manifest with the same restricted ACL.
+stats_manifest = beads / 'embeddeddolt' / args.database / '.dolt/stats/.dolt/noms/manifest'
+for path in (manifest, stats_manifest, beads / 'export-state.json'):
     if path.is_file():
         subprocess.run(['setfacl', '-m', f'u::rw-,g::rwx,g:{args.gid}:rwx,m::---,o::---', '--', str(path)], check=True)
 issues = beads / 'issues.jsonl'
