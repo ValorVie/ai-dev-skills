@@ -75,8 +75,18 @@ for marker in (Path('/experiment/non-dumpable.json'), Path('/experiment/other-id
 idle = identities()
 other = other_identity()
 metadata = metadata_identity()
+original_config = (root / '.beads/config.yaml').read_bytes()
 run(base('switch.py'))
 run([*base('switch.py'), '--apply', '--reviewed'])
+scratch = state / (state / 'current/scratch-id').read_text().strip() / 'backup-repo'
+readback_env = dict(os.environ, BEADS_DIR=str(scratch / '.beads'), BD_DISABLE_METRICS='1',
+                    BD_DISABLE_EVENT_FLUSH='1', DOLT_DISABLE_EVENT_FLUSH='1', DOLT_METRICS_DISABLED='1',
+                    BD_ROUTING_MODE='explicit', BD_ROUTING_DEFAULT='.', BD_EXPORT_AUTO='false')
+readback = subprocess.run([config['bd'], '--readonly', '--json', 'config', 'get', 'sync.remote'],
+                          cwd=scratch, env=readback_env, capture_output=True, text=True, check=True)
+assert json.loads(readback.stdout)['value'] == (state / 'current/remote.git').as_uri()
+assert (root / '.beads/config.yaml').read_bytes() == original_config
+print('scratch effective sync.remote is local; source config unchanged', flush=True)
 assert metadata_identity() == metadata
 gate = root / '.beads/dolt.gate.lock'
 gate_inode = gate.stat().st_ino
@@ -124,4 +134,5 @@ run([*base('switch.py'), '--apply', '--reviewed'])
 run([*base('rollback.py'), '--immediate', '--apply', '--reviewed'])
 check_disabled()
 assert gate.stat().st_ino == gate_inode and metadata_identity() == metadata and identities() == idle and other_identity() == other
+assert (root / '.beads/config.yaml').read_bytes() == original_config
 print('full cycle passed; metadata, gate and both idle processes preserved', flush=True)

@@ -55,6 +55,18 @@ with tempfile.TemporaryDirectory(prefix='migration-entry-') as temporary:
     config_file.write_text(json.dumps(config))
     switch.configure(config_file)
     config_yaml = repo / '.beads/config.yaml'
+    realistic = 'sync.remote: file:///fixture-origin.git\nexport:\n  auto: true\nno-git-ops: false\n'
+    config_yaml.write_text(realistic)
+    user_config = home / '.config/bd/config.yaml'
+    user_config.parent.mkdir(parents=True, exist_ok=True)
+    user_config.write_text('sync.remote: file:///user-origin.git\n')
+    before_project, before_user = config_yaml.read_bytes(), user_config.read_bytes()
+    with patch.dict(os.environ, clean_env, clear=True), \
+            patch.object(switch.state_retention, 'inspectable', return_value=True), \
+            patch.object(sys, 'argv', ['tool', '--config', str(config_file)]):
+        assert switch.main() == 0
+    assert config_yaml.read_bytes() == before_project and user_config.read_bytes() == before_user and not state.exists()
+    user_config.unlink()
     for invalid in ('sync.remote: a\nsync.remote: b\n', 'sync:\n  remote: old\n',
                     'sync.remote:\n  url: file:///unused.git\n'):
         config_yaml.write_text(invalid)

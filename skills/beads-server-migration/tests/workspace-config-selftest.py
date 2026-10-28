@@ -32,10 +32,7 @@ with tempfile.TemporaryDirectory(prefix='migration-config-') as temporary:
                            'routing.mode: auto\n',
                            'contributor:\n  planning_repo: /other\n',
                            'routing:\n  default: /other\n', 'backup.git-repo: /other\n',
-                           'backup:\n  git-push: true\n', 'federation.remote: remote\n',
-                           'repos.primary: /other\n', 'external_projects:\n  other: /other\n',
-                           'sync.git-remote: remote\n', 'sync.remote: remote\n',
-                           'sync:\n  remote: remote\n', 'no-push: true\n'):
+                           'backup:\n  enabled: true\n'):
                 path.write_text(unsafe)
                 try:
                     switch.reject_workspace_overrides(beads)
@@ -43,8 +40,15 @@ with tempfile.TemporaryDirectory(prefix='migration-config-') as temporary:
                     pass
                 else:
                     raise AssertionError('unsafe setting accepted: ' + unsafe)
-            for safe in ('dolt.max-conns: 4\n', 'dolt:\n  max-conns: 4\n'):
+            for safe in ('dolt.max-conns: 4\n', 'dolt:\n  max-conns: 4\n',
+                         'sync.remote: remote\n', 'sync.git-remote: remote\n',
+                         'no-git-ops: false\nno-push: true\n', 'backup.git-push: true\n',
+                         'federation.remote: remote\nrepos.primary: /other\n',
+                         'external_projects:\n  other: /other\n', 'backend: embedded\ndatabase: sample\n'):
                 path.write_text(safe)
+                switch.reject_workspace_overrides(beads)
+            if path != project:
+                path.write_text('sync:\n  remote: remote\n')
                 switch.reject_workspace_overrides(beads)
             if original is None:
                 path.unlink()
@@ -105,6 +109,31 @@ with tempfile.TemporaryDirectory(prefix='migration-config-') as temporary:
             pass
         else:
             raise AssertionError('unexpected scratch remote accepted')
+        scratch_config.unlink()
+        try:
+            switch.reject_workspace_overrides(scratch_beads)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError('missing scratch config accepted')
+        (work / 'remote.git').mkdir()
+        stage = scratch / 'server-repo'
+        stage.mkdir()
+        switch.CONFIG.update(bd='/fixture/bd', dolt='/fixture/dolt', database='sample')
+        seen = []
+        def fake_init(args, **kwargs):
+            seen.append(kwargs['env'])
+            return SimpleNamespace(returncode=0, stdout='', stderr='')
+        with patch.object(switch.subprocess, 'run', fake_init):
+            switch.run(['bd', 'init'], stage, dict(os.environ, BD_EXPORT_AUTO='true'))
+            try:
+                switch.run(['bd', 'init'], root, dict(os.environ))
+            except ValueError:
+                pass
+            else:
+                raise AssertionError('init accepted an unrelated workspace')
+        assert len(seen) == 1 and seen[0]['BD_SYNC_REMOTE'] == (work / 'remote.git').as_uri()
+        assert seen[0]['BD_EXPORT_AUTO'] == 'false' and seen[0]['BEADS_DIR'] == str(stage / '.beads')
         (beads / 'metadata.json').write_text(json.dumps({'dolt_mode': 'embedded', 'dolt_database': 'sample'}))
         switch.CONFIG = {'bd': '/fixture/bd', 'dolt': '/fixture/dolt', 'database': 'sample'}
         seen = []
@@ -116,6 +145,7 @@ with tempfile.TemporaryDirectory(prefix='migration-config-') as temporary:
             switch.helper('snapshot.py', ['--bd', 'bd', '--out', root / 'out'], beads.parent, dict(os.environ))
         assert len(seen) == 2 and all(env['BEADS_DIR'] == str(beads.resolve()) for _, env in seen)
         assert all(env['BD_ROUTING_MODE'] == 'explicit' and env['BD_ROUTING_DEFAULT'] == '.' for _, env in seen)
+        assert all(env['BD_EXPORT_AUTO'] == 'false' for _, env in seen)
         assert seen[0][0][0] == '/fixture/bd' and 'snapshot.py' in seen[1][0][1]
         location = {'path': str(beads), 'database_path': str(beads / 'embeddeddolt')}
         with patch.object(switch, 'run', return_value=json.dumps(location)):
@@ -130,7 +160,7 @@ with tempfile.TemporaryDirectory(prefix='migration-config-') as temporary:
                 else:
                     raise AssertionError('wrong readback accepted: ' + key)
     for variable in ('BD_DOLT_AUTO_PUSH', 'BD_ROUTING_DEFAULT', 'BEADS_ROUTING_MODE',
-                     'BD_BACKUP_GIT_REPO', 'BD_EXTERNAL_PROJECTS'):
+                     'BD_BACKUP_GIT_REPO', 'BD_CONTRIBUTOR_PLANNING_REPO'):
         with patch.dict(os.environ, {variable: ''}, clear=True):
             try:
                 switch.reject_selector_environment()
@@ -138,4 +168,8 @@ with tempfile.TemporaryDirectory(prefix='migration-config-') as temporary:
                 pass
             else:
                 raise AssertionError('unsafe environment accepted: ' + variable)
+    for variable in ('BD_EXTERNAL_PROJECTS', 'BD_FEDERATION_REMOTE', 'BD_REPOS_PRIMARY',
+                     'BD_NO_GIT_OPS', 'BD_METRICS_ENDPOINT', 'BD_DOLT_MAX_CONNS'):
+        with patch.dict(os.environ, {variable: 'fixture'}, clear=True):
+            switch.reject_selector_environment()
 print('workspace config selftest passed')

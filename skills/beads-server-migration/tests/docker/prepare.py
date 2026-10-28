@@ -60,13 +60,9 @@ if args.kind == 'copy':
     tree.rename(tree.parent / args.database)
     data['dolt_database'] = args.database
     meta.write_text(json.dumps(data, indent=2) + '\n')
-    config_yaml = repo / '.beads/config.yaml'
-    lines = config_yaml.read_text().splitlines(keepends=True)
-    remote_lines = [line for line in lines if re.match(r'^sync\.remote\s*:', line)]
-    if len(remote_lines) > 1 or any(re.match(r'^sync\s*:', line) for line in lines):
-        raise SystemExit('copy fixture has unsupported sync configuration')
-    config_yaml.write_text(''.join(line for line in lines if not re.match(r'^(?:sync\.remote|no-git-ops)\s*:', line)))
-    print('copy fixture: removed source sync.remote and no-git-ops from disposable copy')
+    if (repo / '.beads/config.yaml').read_bytes() != (source / 'config.yaml').read_bytes():
+        raise SystemExit('copy fixture configuration differs from source')
+    print('copy fixture: config bytes equal source; no lines removed')
 else:
     user(['bd', 'init', '--prefix', args.database, '--skip-agents', '--skip-hooks', '--non-interactive'])
     data = json.loads((repo / '.beads/metadata.json').read_text())
@@ -96,6 +92,11 @@ else:
         raise SystemExit('database routing isolation check failed')
     print('database routing red/green: decoy without override, fixture with override')
 beads = repo / '.beads'
+user_config = root / 'home/.config/bd/config.yaml'
+user_config.parent.mkdir(parents=True)
+user_config.write_text('sync.remote: file:///experiment/user-remote.git\n')
+for path in (user_config.parent.parent, user_config.parent, user_config):
+    os.chown(path, args.uid, args.gid)
 if args.kind == 'fresh' and re.search(r'^sync\.remote\s*:', (beads / 'config.yaml').read_text(), re.M):
     raise SystemExit('fresh fixture unexpectedly contains sync.remote')
 subprocess.run(['setfacl', '-R', '-b', '--', str(beads)], check=True)

@@ -61,24 +61,27 @@ BD_SELECTOR_ENV = (
     'BD_DOLT_PROXIED_SERVER', 'BEADS_DOLT_AUTO_START', 'BEADS_DOLT_CREDENTIAL_COMMAND',
     'BEADS_PRODUCTION_PORT', 'BEADS_SKIP_IDENTITY_CHECK', 'BEADS_TEST_MODE', 'BEADS_TEST_SERVER',
     'BD_SYNC_REMOTE', 'BD_SYNC_GIT_REMOTE', 'BEADS_TEST_IGNORE_REPO_CONFIG',
-    'BD_NO_DB', 'BEADS_NO_DB', 'BD_NO_PUSH', 'BEADS_NO_PUSH', 'BD_NO_GIT_OPS', 'BEADS_NO_GIT_OPS',
+    'BD_NO_DB', 'BEADS_NO_DB',
     'BD_DATABASE', 'BEADS_DATABASE', 'BEADS_BACKEND', 'BEADS_DATABASE_BACKEND',
+    'BD_BACKUP_ENABLED', 'BEADS_BACKUP_ENABLED', 'BD_BACKUP_GIT_REPO', 'BEADS_BACKUP_GIT_REPO',
+    *(prefix + key for prefix in ('BD_', 'BEADS_') for key in
+      ('ROUTING_MODE', 'ROUTING_DEFAULT', 'ROUTING_MAINTAINER', 'ROUTING_CONTRIBUTOR',
+       'CONTRIBUTOR_AUTO_ROUTE', 'CONTRIBUTOR_PLANNING_REPO')),
 )
 BD_SELECTOR_PREFIXES = tuple(prefix + root + '_' for prefix in ('BD_', 'BEADS_')
-                             for root in ('DOLT', 'ROUTING', 'CONTRIBUTOR', 'REPOS', 'EXTERNAL_PROJECTS',
-                                          'SYNC', 'FEDERATION', 'BACKUP', 'GITHUB', 'GITLAB', 'LINEAR',
-                                          'JIRA', 'ADO', 'NOTION', 'AI', 'METRICS'))
+                             for root in ('DOLT',))
 BD_SELECTOR_ROOTS = tuple(prefix[:-1] for prefix in BD_SELECTOR_PREFIXES)
+SAFE_SELECTOR_ENV = frozenset({'BD_DOLT_MAX_CONNS', 'BEADS_DOLT_MAX_CONNS'})
 
 # Beads 1.3.1 internal/storage/dolt/open.go:318-332: connection pool size only.
 DOLT_SAFE_KEYS = frozenset({'dolt.max-conns'})
-UNSAFE_CONFIG_ROOTS = frozenset({'db', 'no-db', 'backend', 'database', 'routing', 'repos',
-                                 'contributor', 'external_projects', 'sync', 'federation', 'backup', 'no-push',
-                                 'no-git-ops',
-                                 'github', 'gitlab', 'linear', 'jira', 'ado', 'notion', 'ai', 'metrics'})
+UNSAFE_CONFIG_ROOTS = frozenset({'db', 'no-db'})
+UNSAFE_CONFIG_KEYS = frozenset({'backup.enabled', 'backup.git-repo', 'routing.mode', 'routing.default',
+                                'routing.maintainer', 'routing.contributor', 'contributor.auto_route',
+                                'contributor.planning_repo'})
 
 
-def isolate_sync_remote(text, remote, user_config=False, guard=False, allowed_sync_remote=None):
+def isolate_sync_remote(text, remote, user_config=False, guard=False):
     """Accept only simple YAML mappings so an alternate sync key cannot hide."""
     message = 'config.yaml 格式不支援；請整理為簡單鍵值設定，移除頂層 sync 區塊並保留至多一行 sync.remote'
     lines = text.splitlines(keepends=True)
@@ -116,11 +119,8 @@ def isolate_sync_remote(text, remote, user_config=False, guard=False, allowed_sy
                 raise ValueError(message)
             dotted_keys.add(dotted)
             root = dotted.split('.')[0]
-            if root in UNSAFE_CONFIG_ROOTS:
-                permitted = (dotted == 'sync.remote' and len(path) == 1 and allowed_sync_remote is not None
-                             and value == json.dumps(allowed_sync_remote))
-                if not permitted:
-                    raise ValueError('config.yaml 含不支援的選庫、連線或推送鍵；請移除後重新預覽')
+            if root in UNSAFE_CONFIG_ROOTS or dotted in UNSAFE_CONFIG_KEYS:
+                raise ValueError('config.yaml 含不支援的選庫、連線或推送鍵；請移除後重新預覽')
             if root == 'dolt':
                 if dotted == 'dolt' and not value and len(path) == 1:
                     dolt_container = True
@@ -154,13 +154,23 @@ def isolate_sync_remote(text, remote, user_config=False, guard=False, allowed_sy
 
 
 def reject_selector_environment():
-    names = sorted(name for name in os.environ if name in BD_SELECTOR_ENV or name in BD_SELECTOR_ROOTS
-                   or name.startswith(BD_SELECTOR_PREFIXES))
+    names = sorted(name for name in os.environ if name not in SAFE_SELECTOR_ENV and
+                   (name in BD_SELECTOR_ENV or name in BD_SELECTOR_ROOTS or name.startswith(BD_SELECTOR_PREFIXES)))
     if names:
         raise RuntimeError('已設定選庫或測試環境變數：' + ', '.join(names))
 
 
 def reject_workspace_overrides(beads, env=None):
+    scratch_remote = None
+    if (CONFIG and CONFIG.get('state') and beads.parent.name == 'backup-repo'
+            and beads.parent.parent.parent == Path(CONFIG['state'])):
+        state = Path(CONFIG['state'])
+        work = state / 'current'
+        if beads.parent != scratch_root(state, work) / 'backup-repo':
+            raise ValueError('暫存工作區與檢查點不符')
+        scratch_remote = (work / 'remote.git').as_uri()
+        if (beads / 'config.yaml').is_symlink() or not (beads / 'config.yaml').is_file():
+            raise ValueError('scratch 設定檔不可用')
     for name in ('.env', 'redirect', 'config.local.yaml'):
         path = beads / name
         try:
@@ -188,24 +198,10 @@ def reject_workspace_overrides(beads, env=None):
             text = path.read_bytes().decode('utf-8')
         except (OSError, UnicodeError) as error:
             raise RuntimeError('無法讀取設定檔；請確認讀取權限及格式後重新預覽') from error
-        is_project = path == beads / 'config.yaml'
-        allowed_remote = managed_sync_remote(beads) if is_project else None
-        isolate_sync_remote(text, 'file:///local-placeholder', user_config=not is_project,
-                            guard=True, allowed_sync_remote=allowed_remote)
-
-
-def managed_sync_remote(beads):
-    """Allow only the tool-created local remote in its checked scratch copy."""
-    if not CONFIG or 'state' not in CONFIG:
-        return None
-    state = Path(CONFIG['state'])
-    if beads.parent.name != 'backup-repo' or beads.parent.parent.parent != state:
-        return None
-    work = state / 'current'
-    root = scratch_root(state, work)
-    if beads != root / 'backup-repo/.beads':
-        raise ValueError('暫存工作區與檢查點不符')
-    return (work / 'remote.git').as_uri()
+        project = path == beads / 'config.yaml'
+        isolate_sync_remote(text, 'file:///local-placeholder', user_config=not project, guard=True)
+        if project and scratch_remote is not None and text != isolate_sync_remote(text, scratch_remote):
+            raise ValueError('scratch 遠端與受控本機遠端不符')
 
 
 def child_environment(env):
@@ -213,7 +209,8 @@ def child_environment(env):
     # Only an explicit tool-created environment may supply the fixed local port.
     port = source.get('BEADS_DOLT_SERVER_PORT') if env is not None else None
     for name in tuple(source):
-        if name in BD_SELECTOR_ENV or name in BD_SELECTOR_ROOTS or name.startswith(BD_SELECTOR_PREFIXES):
+        if name not in SAFE_SELECTOR_ENV and (name in BD_SELECTOR_ENV or name in BD_SELECTOR_ROOTS
+                                               or name.startswith(BD_SELECTOR_PREFIXES)):
             source.pop(name)
     if port is not None:
         if port != str(CONFIG['port']):
@@ -267,9 +264,17 @@ def run(args, cwd=None, env=None):
     if args[0] in ('bd', 'dolt'):
         args[0] = CONFIG[args[0]]
     if args[0] == CONFIG['bd']:
-        verify_bd_workspace(cwd, env, allow_init=len(args) > 1 and args[1] == 'init')
+        initializing = len(args) > 1 and args[1] == 'init'
+        verify_bd_workspace(cwd, env, allow_init=initializing)
+        if initializing:
+            state = Path(CONFIG['state'])
+            work = state / 'current'
+            remote = work / 'remote.git'
+            if Path(cwd) != scratch_root(state, work) / 'server-repo' or remote.is_symlink() or not remote.is_dir():
+                raise ValueError('初始化工作區或本機遠端不符')
+            env['BD_SYNC_REMOTE'] = remote.as_uri()
         env['BEADS_DIR'] = str(Path(cwd).resolve() / '.beads')
-        env.update(BD_ROUTING_MODE='explicit', BD_ROUTING_DEFAULT='.')
+        env.update(BD_ROUTING_MODE='explicit', BD_ROUTING_DEFAULT='.', BD_EXPORT_AUTO='false')
     log_event('開始 ' + Path(args[0]).name)
     env['DOLT_DISABLE_EVENT_FLUSH'] = '1'
     env['DOLT_METRICS_DISABLED'] = '1'
@@ -357,7 +362,7 @@ def helper(name, args, cwd, env=None):
     if name == 'snapshot.py':
         verify_bd_workspace(cwd, env)
         env['BEADS_DIR'] = str(Path(cwd).resolve() / '.beads')
-        env.update(BD_ROUTING_MODE='explicit', BD_ROUTING_DEFAULT='.')
+        env.update(BD_ROUTING_MODE='explicit', BD_ROUTING_DEFAULT='.', BD_EXPORT_AUTO='false')
     log_event('開始 ' + name)
     env['DOLT_DISABLE_EVENT_FLUSH'] = '1'
     env['DOLT_METRICS_DISABLED'] = '1'
