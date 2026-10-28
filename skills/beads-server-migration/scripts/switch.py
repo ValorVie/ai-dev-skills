@@ -43,7 +43,8 @@ def config_digest():
 
 
 def check_target_config(target):
-    if (target.get('config_sha256') != config_digest()
+    if (any(type(target.get(key)) is not int for key in ('port', 'uid', 'keep'))
+            or target.get('config_sha256') != config_digest()
             or target.get('repo') != CONFIG['repo'] or target.get('port') != CONFIG['port']
             or target.get('uid') != os.getuid() or target.get('keep') != CONFIG['keep']):
         raise ValueError('設定與切換檢查點不符')

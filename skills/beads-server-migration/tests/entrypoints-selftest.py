@@ -50,6 +50,13 @@ with tempfile.TemporaryDirectory(prefix='migration-entry-') as temporary:
             pass
         else:
             raise AssertionError('changed checkpoint accepted: ' + field)
+    for field in ('port', 'uid', 'keep'):
+        try:
+            switch.check_target_config(dict(checkpoint, **{field: True}))
+        except ValueError:
+            pass
+        else:
+            raise AssertionError('boolean checkpoint accepted: ' + field)
     for field, value in (('port', 16022), ('service', 'other.service'),
                          ('state', str(root / 'other')), ('keep', 6)):
         changed = dict(config, **{field: value})
