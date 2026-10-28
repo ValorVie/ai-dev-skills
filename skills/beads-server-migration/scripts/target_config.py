@@ -28,9 +28,10 @@ def load(path):
         value = Path(data[key])
         if not value.is_absolute() or value != value.resolve(strict=False):
             raise ValueError('路徑必須為解析後的絕對路徑：' + key)
-    for key in ('database', 'prefix'):
-        if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_-]*', data[key]):
-            raise ValueError('識別字不符：' + key)
+    if not re.fullmatch(r'[A-Za-z0-9_]+', data['database']):
+        raise ValueError('資料庫名稱不符')
+    if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_-]*', data['prefix']):
+        raise ValueError('前綴不符')
     if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.@-]*\.service', data['service']):
         raise ValueError('服務名稱不符')
     return data

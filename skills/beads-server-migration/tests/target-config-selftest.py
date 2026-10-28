@@ -32,7 +32,7 @@ class TargetConfigTest(unittest.TestCase):
     def test_valid_and_invalid_config(self):
         self.assertEqual(self.write(), self.config)
         for key, value in [('port', True), ('keep', 0), ('repo', '/tmp/../tmp'),
-                           ('database', '../bad'), ('service', 'bad/path.service')]:
+                           ('database', '../bad'), ('database', 'bad-name'), ('service', 'bad/path.service')]:
             old = self.config[key]
             self.config[key] = value
             with self.subTest(key=key), self.assertRaises(ValueError):
