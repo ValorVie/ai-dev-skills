@@ -65,8 +65,8 @@ if args.kind == 'copy':
     remote_lines = [line for line in lines if re.match(r'^sync\.remote\s*:', line)]
     if len(remote_lines) > 1 or any(re.match(r'^sync\s*:', line) for line in lines):
         raise SystemExit('copy fixture has unsupported sync configuration')
-    config_yaml.write_text(''.join(line for line in lines if not re.match(r'^sync\.remote\s*:', line)))
-    print('copy fixture: removed source sync.remote from disposable copy')
+    config_yaml.write_text(''.join(line for line in lines if not re.match(r'^(?:sync\.remote|no-git-ops)\s*:', line)))
+    print('copy fixture: removed source sync.remote and no-git-ops from disposable copy')
 else:
     user(['bd', 'init', '--prefix', args.database, '--skip-agents', '--skip-hooks', '--non-interactive'])
     data = json.loads((repo / '.beads/metadata.json').read_text())
