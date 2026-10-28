@@ -175,7 +175,7 @@ with tempfile.TemporaryDirectory(prefix='migration-config-') as temporary:
                     raise AssertionError('wrong readback accepted: ' + key)
     for variable in ('BD_DOLT_AUTO_PUSH', 'BD_ROUTING_DEFAULT', 'BEADS_ROUTING_MODE',
                      'BD_BACKUP_GIT_REPO', 'BD_CONTRIBUTOR_PLANNING_REPO', 'BD_OTEL_ENABLED',
-                     'BD_OTEL_METRICS_URL'):
+                     'BD_OTEL_METRICS_URL', 'BD_OTEL_LOGS_URL', 'BEADS_MEM_PROFILE', 'BEADS_MEM_STATS'):
         with patch.dict(os.environ, {variable: ''}, clear=True):
             try:
                 switch.reject_selector_environment()

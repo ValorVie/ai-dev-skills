@@ -6,7 +6,9 @@
 
 工具執行 `bd --readonly list/show/comments/dep list`、`bd where`、`bd --sandbox dolt commit`、`bd --sandbox backup init/sync`、`bd init --server --external --non-interactive` 及 `bd backup restore`；退回另用相同的 commit、backup 與快照命令。工具固定 `BD_EXPORT_AUTO=false`，因寫入命令後 `cmd/bd/main.go:2031-2102` 可能自動匯出，而 `cmd/bd/export_auto.go:99-124,205-216,266-270` 會依 `export.path` 寫檔及 stage；只影響工具子程序，不改操作者設定。工具亦關閉遙測（`cmd/bd/main.go:1034-1048,2430-2446`）。
 
-各 `bd` 命令啟動時另會初始化 OpenTelemetry（`cmd/bd/main.go:1028-1032`），`BD_OTEL_ENABLED` 與 `BD_OTEL_METRICS_URL` 可啟用網路輸出（`internal/telemetry/telemetry.go:85-100,110-112,151-170,216-231`）；這兩個操作者環境變數一律拒絕。子程序另固定 `OTEL_SDK_DISABLED=true`（`internal/telemetry/telemetry.go:90-94`），防止其他遙測選項造成網路輸出；僅設定 `BD_OTEL_STDOUT` 為主控台輸出，不因名稱拒絕。
+各 `bd` 命令啟動時另會初始化 OpenTelemetry（`cmd/bd/main.go:1028-1032`），`BD_OTEL_ENABLED`、`BD_OTEL_METRICS_URL`、`BD_OTEL_LOGS_URL` 可啟用遙測，並在設定 OTLP 端點時輸出到網路（`internal/telemetry/telemetry.go:85-100,110-115,151-170,216-231,243-262`）；這三個操作者環境變數一律拒絕。子程序另固定 `OTEL_SDK_DISABLED=true`（`internal/telemetry/telemetry.go:90-94`），防止其他遙測選項造成網路輸出；僅設定 `BD_OTEL_STDOUT` 為主控台輸出，不因名稱拒絕。
+
+各 `bd` 命令結束時會依 `BEADS_MEM_PROFILE`／`BEADS_MEM_STATS` 建立或截斷指定檔案（`cmd/bd/main.go:2163-2185`），因此這兩個操作者環境變數也在預覽前拒絕；`BEADS_MEM_PROFILE_NOGC` 只改記憶體檢查方式，可保留。
 
 拒絕的 YAML 鍵及原因：
 
