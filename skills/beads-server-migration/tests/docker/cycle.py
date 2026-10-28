@@ -87,6 +87,7 @@ run(['systemctl', '--user', 'enable', config['service']])
 run([*base('switch.py'), '--apply', '--reviewed'])
 env = os.environ.copy()
 env['BEADS_DOLT_SERVER_PORT'] = str(config['port'])
+env.update(BEADS_DIR=str(root / '.beads'), BD_ROUTING_MODE='explicit', BD_ROUTING_DEFAULT='.')
 rows = json.loads(run([config['bd'], '--readonly', 'list', '--all', '--limit', '1', '--json'], env=env).stdout)
 issue = rows[0]['id']
 run([config['bd'], '--dolt-auto-commit', 'off', 'update', issue, '--set-metadata', 'fixture_cycle=written'], env=env)
