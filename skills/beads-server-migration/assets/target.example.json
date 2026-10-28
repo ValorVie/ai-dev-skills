@@ -1,0 +1,15 @@
+{
+  "hostname": "example-host",
+  "account": "operator",
+  "repo": "/srv/example/repo",
+  "state": "/srv/example/migration-state",
+  "port": 16421,
+  "database": "example_db",
+  "prefix": "example",
+  "service": "example-beads.service",
+  "group": "example-team",
+  "keep": 5,
+  "bd": "/opt/beads/bin/bd",
+  "dolt": "/opt/dolt/bin/dolt",
+  "docker_fixture": false
+}
