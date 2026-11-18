@@ -27,7 +27,17 @@ group 後仍可個別選擇。
 npx skills add ValorVie/ai-dev-skills --skill custom-agent-router
 ```
 
-ai-dev 使用者不需要逐一執行這些命令。ai-dev 的 `npx-skills` phase 會依明確清單安裝及更新 baseline skills。
+ai-dev 的 `npx-skills` phase 依明確清單安裝全域 baseline；下方 collection 清單不代表全部預設安裝。
+
+`custom-skills-dev`、`custom-skills-doc-updater`、`custom-skills-ecc-analyze`、
+`custom-skills-upstream-ops`、`custom-skills-tool-overlap-analyzer` 只裝在
+framework 與本 collection repository 的專案層。維護者在各 repository 根目錄逐一執行：
+
+```bash
+npx skills add ValorVie/ai-dev-skills --skill custom-skills-dev -a claude-code codex --yes
+```
+
+其餘四項換成對應名稱。這些項目與 `discuss-multi-ai` 仍可單獨安裝，但不列入全域 baseline。
 
 ## Skills
 
