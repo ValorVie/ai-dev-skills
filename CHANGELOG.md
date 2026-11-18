@@ -11,6 +11,7 @@
 - `custom-skills-upstream-ops` 隨 ai-dev 退役 UDS：移除 `uds-check` 模式與 `scripts/check_uds.py`，`overlap` 不再產生 `.standards/profiles/overlaps.yaml` 片段，audit／maintenance／install-methods 移除 UDS 範例。
 - `first-principles` 升為 v0.3.1：description 的 17 個觸發片語改成一段情境說明；README 註明這是相對上游唯一的修改。
 - 移除 `work-log-claude`。工作日誌改由 ai-dev 專案範本提供的 `work-log-codex` 處理，Claude Code 與 Codex 共用同一套解析器；只讀 Claude Code 紀錄時用範本的 `.claude/skills/work-log-claude` 薄包裝。skill collection 更新為 19 個 skills。
+- `custom-skills-doc-writer` 新增 `references/headings-and-parentheses.md`，動筆前先讀：標題只標分類或階段、用短詞組，答案與提醒寫在標題下的第一句；括號只解釋前一個詞，不替整個標題或整句話貼標籤。審查清單原本要求把「像模板分類」的標題改成讀者問題，改成檢查標題有沒有被寫成整句。
 
 ## 0.1.2 - 2026-09-29
 

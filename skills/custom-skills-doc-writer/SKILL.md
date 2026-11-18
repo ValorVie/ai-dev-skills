@@ -66,7 +66,7 @@ AI 助理應先自己查。只有資料找不到、正式來源互相衝突，�
 
 ### 先用最小骨架
 
-從 [document-types.md](references/document-types.md) 取得該類型的問題順序。標題可以配合內容改寫，重點是每一節都回答一個真實讀者問題。
+從 [document-types.md](references/document-types.md) 取得該類型的問題順序。每一節都回答一個真實讀者問題；標題只標出這一節的分類或階段，答案寫在標題下的第一句。動筆前先讀 [headings-and-parentheses.md](references/headings-and-parentheses.md)。
 
 需要證據分級、方案比較、安全操作、相容性或任務連結時，再讀 [content-blocks.md](references/content-blocks.md) 的對應內容。可選內容不是待填欄位；沒有證據或不影響本次讀者的內容直接省略。
 
@@ -161,6 +161,7 @@ AI 試讀只能標成「AI 可理解性檢查」，不能代替真人使用結�
 
 | 資源 | 何時讀取 |
 | --- | --- |
+| [headings-and-parentheses.md](references/headings-and-parentheses.md) | 動筆前；不啟動完整流程的短稿、通知與說明也要讀 |
 | [document-types.md](references/document-types.md) | 選定文件類型後，讀對應章節 |
 | [content-blocks.md](references/content-blocks.md) | 文件需要證據、方案、安全、相容性或任務資訊時 |
 | [language-and-fact-check.md](references/language-and-fact-check.md) | 正式技術文件、中英混合內容或使用選用 ASD 檢查器時 |
